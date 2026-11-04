@@ -1,12 +1,12 @@
 <!-- docs/_sidebar.md -->
 
-- [Home](/docs)
+- [Home](/)
 - [Projetos](/docs/Projeto/Projeto.md)
 
 - **Base**
-  - [1. Desenho de Software (DAS ou Reutilização)](/docs/Base/1.DAS_Reutilizacao.md)
+  - [1. Desenho de Software (DAS ou Reutilização)](/Base/1.DAS_Reutilizacao.md)
   - Relatórios
-      - [1.1.1. DAS](/docs/Base/Relatórios/1.1.1.DAS.md)
-      - [1.1.2. Reutilização](/docs/Base/Relatórios/1.1.2.Reutilizacao.md)
-  - [1.2. Participações](/docs/Base/1.2.Participacoes.md)
-  - [1.3. Iniciativas Extras](/docs/Base/1.3.IniciativasExtras.md)
+      - [1.1.1. DAS](/Base/Relatorios/1.1.1.DAS.md)
+      - [1.1.2. Reutilização](/Base/Relatorios/1.1.2.Reutilizacao.md)
+  - [1.2. Participações](/Base/1.2.Participacoes.md)
+  - [1.3. Iniciativas Extras](/Base/1.3.IniciativasExtras.md)
