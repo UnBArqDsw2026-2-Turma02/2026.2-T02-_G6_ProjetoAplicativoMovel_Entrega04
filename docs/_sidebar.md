@@ -1,7 +1,7 @@
 <!-- docs/_sidebar.md -->
 
 - [Home](/)
-- [Projetos](/docs/Projeto/Projeto.md)
+- [Projetos](/Projeto/Projeto.md)
 
 - **Base**
   - [1. Desenho de Software (DAS ou Reutilização)](/Base/1.DAS_Reutilizacao.md)
