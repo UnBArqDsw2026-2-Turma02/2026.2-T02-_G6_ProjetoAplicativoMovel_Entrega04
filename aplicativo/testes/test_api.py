@@ -80,9 +80,79 @@ def test_paginas_principais_carregam(cliente: TestClient) -> None:
         "/infracoes",
         "/infracoes/INF-001",
         "/sne",
-        "/arquitetura",
+        "/habilitacao",
     ]:
         assert cliente.get(caminho).status_code == 200, caminho
+
+
+def test_swagger_e_pagina_de_arquitetura_foram_removidos(cliente: TestClient) -> None:
+    for caminho in ["/docs", "/redoc", "/openapi.json", "/arquitetura"]:
+        assert cliente.get(caminho).status_code == 404, caminho
+
+
+def test_boleto_e_gerado_uma_vez_e_acompanha_o_desconto(cliente: TestClient) -> None:
+    assert cliente.get("/infracoes/INF-001/boleto").status_code == 404
+    primeiro = cliente.post("/api/v1/cidadao/infracoes/INF-001/boleto")
+    assert primeiro.status_code == 200
+    boleto = primeiro.json()["dados"]["boleto"]
+    assert boleto["valor_a_pagar"] == 130.16
+    repetido = cliente.post("/api/v1/cidadao/infracoes/INF-001/boleto").json()["dados"]["boleto"]
+    assert repetido["identificador"] == boleto["identificador"]
+    cliente.post("/api/v1/cidadao/infracoes/INF-001/descontos", json={"percentual": 20})
+    boleto_atualizado = cliente.get("/api/v1/cidadao/infracoes/INF-001").json()["boleto"]
+    assert boleto_atualizado["percentual_desconto"] == 20
+    assert boleto_atualizado["valor_a_pagar"] == 104.13
+    assert cliente.get("/infracoes/INF-001/boleto").status_code == 200
+
+
+def test_boleto_de_infracao_paga_e_recusado(cliente: TestClient) -> None:
+    assert cliente.post("/api/v1/cidadao/infracoes/INF-004/boleto").status_code == 422
+
+
+def test_indicacao_de_condutor_gera_protocolo_unico(cliente: TestClient) -> None:
+    corpo = {"cpf_condutor": CPF_COMPRADOR_HABILITADO, "numero_cnh_condutor": "11122233344", "declaracao_aceita": True}
+    resposta = cliente.post("/api/v1/cidadao/infracoes/INF-001/indicacao-condutor", json=corpo)
+    assert resposta.status_code == 200
+    assert resposta.json()["dados"]["indicacao"]["protocolo"].startswith("IND-")
+    assert cliente.post("/api/v1/cidadao/infracoes/INF-001/indicacao-condutor", json=corpo).status_code == 422
+    proprio_cpf = {**corpo, "cpf_condutor": "123.456.789-01"}
+    assert cliente.post("/api/v1/cidadao/infracoes/INF-003/indicacao-condutor", json=proprio_cpf).status_code == 422
+    sem_declaracao = {**corpo, "declaracao_aceita": False}
+    assert cliente.post("/api/v1/cidadao/infracoes/INF-003/indicacao-condutor", json=sem_declaracao).status_code == 422
+
+
+def test_ppd_sem_impedimento_vira_definitiva_e_avisa_observadores(cliente: TestClient) -> None:
+    habilitacao = cliente.get("/api/v1/cidadao/habilitacao").json()
+    assert habilitacao["situacao"] == "PPD Ativa"
+    assert habilitacao["notificacoes"] == []
+    resposta = cliente.post("/api/v1/cidadao/habilitacao/conclusao-ppd")
+    assert resposta.json()["dados"]["situacao"] == "Definitiva"
+    habilitacao = cliente.get("/api/v1/cidadao/habilitacao").json()
+    assert {notificacao["canal"] for notificacao in habilitacao["notificacoes"]} == {"Push", "E-mail"}
+    assert len(habilitacao["auditoria"]) == 1
+    assert cliente.post("/api/v1/cidadao/habilitacao/conclusao-ppd").status_code == 409
+
+
+def test_ppd_com_infracao_grave_e_cassada_e_bloqueia_categoria(cliente: TestClient) -> None:
+    cliente.post("/api/v1/cidadao/habilitacao/infracoes", json={"gravidade": "grave"})
+    assert cliente.post("/api/v1/cidadao/habilitacao/conclusao-ppd").json()["dados"]["situacao"] == "Cassada"
+    assert cliente.post("/api/v1/cidadao/habilitacao/infracoes", json={"gravidade": "leve"}).status_code == 409
+    solicitacao = cliente.post("/api/v1/cidadao/habilitacao/alteracoes-categoria", json={"categoria_desejada": "AB"})
+    assert solicitacao.json()["dados"]["solicitacao"]["resultado"] == "recusada"
+    assert cliente.post("/api/v1/cidadao/habilitacao/reinicio").status_code == 200
+    assert cliente.get("/api/v1/cidadao/habilitacao").json()["situacao"] == "PPD Ativa"
+
+
+def test_cadeia_de_alteracao_de_categoria(cliente: TestClient) -> None:
+    resultados = {
+        categoria: cliente.post(
+            "/api/v1/cidadao/habilitacao/alteracoes-categoria", json={"categoria_desejada": categoria}
+        ).json()["dados"]["solicitacao"]["resultado"]
+        for categoria in ["AB", "C", "A"]
+    }
+    assert resultados == {"AB": "aceita", "C": "encaminhada_ao_detran", "A": "recusada"}
+    invalida = cliente.post("/api/v1/cidadao/habilitacao/alteracoes-categoria", json={"categoria_desejada": "Z"})
+    assert invalida.status_code == 422
 
 
 def test_veiculo_inexistente_retorna_404(cliente: TestClient) -> None:
