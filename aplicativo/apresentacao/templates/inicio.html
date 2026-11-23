@@ -50,7 +50,7 @@
   </div>
 </section>
 
-<section class="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+<section class="mt-8 grid gap-5 sm:grid-cols-2">
   {{ ui.atalho("/habilitacao", "habilitacao", "Habilitação", "PPD, categoria e avisos", "azul") }}
   {{ ui.atalho("/infracoes", "alerta", "Infrações", (resumo_infracoes.valor_em_aberto | moeda) ~ " em aberto", "vermelho") }}
   {{ ui.atalho("/sne", "notificacao", "SNE", "Até 40% de desconto", "amarelo") }}
