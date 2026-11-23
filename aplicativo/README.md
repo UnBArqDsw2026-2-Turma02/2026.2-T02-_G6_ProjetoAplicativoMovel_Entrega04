@@ -21,7 +21,6 @@ docker compose up --build
 | Serviço | Endereço | O que é |
 |--|--|--|
 | `aplicativo` | <http://127.0.0.1:8000> | MVP em FastAPI |
-| `aplicativo` | <http://127.0.0.1:8000/docs> | Documentação interativa da API (Swagger) |
 | `documentacao` | <http://127.0.0.1:3000> | GitPages (Docsify) servido por Nginx |
 
 Para encerrar: `Ctrl+C` e depois `docker compose down`. Para subir apenas o app: `docker compose up --build aplicativo`.
@@ -61,17 +60,30 @@ aplicativo/
 ├── principal.py              criação da aplicação FastAPI e tratamento de erros
 ├── configuracao.py           caminhos, nome do app e constantes
 ├── apresentacao/             rotas de páginas, API REST, esquemas, templates e JS
-├── aplicacao/                serviços de veículos e contêiner de dependências
+├── aplicacao/                serviços de veículos e de habilitação e contêiner de dependências
 ├── dominio/                  entidades, exceções e dados de demonstração
-├── infraestrutura/           mocks do gov.br, do órgão autuador e do SNE
+├── infraestrutura/           mocks do gov.br, do órgão autuador, de boletos, do protocolo de indicação e do SNE
 └── padroes/
     ├── multiton/             BaseDetranMultiton (uma base por UF)
     ├── factory_method/       Creators de consultas e de serviços
     ├── prototype/            CRLVe clonado a partir do modelo-base
-    ├── adapter/              gov.br e órgão autuador convertidos para o domínio
+    ├── adapter/              gov.br, órgão autuador, boletos e protocolo de indicação de condutor
     ├── strategy/             políticas de desconto e validação de documento do SNE
-    └── facade/               InfracoesFacade e SneFacade
+    ├── facade/               InfracoesFacade e SneFacade
+    ├── state/                situações da habilitação: PPD Ativa, Definitiva e Cassada
+    ├── observer/             avisos por push, e-mail e auditoria quando a situação muda
+    └── chain_of_responsibility/  validadores da mudança de categoria
 ```
+
+### Front-end reutilizável
+
+| Arquivo | Conteúdo |
+|--|--|
+| `templates/componentes/_cabeca.html` | Fontes, Tailwind e as classes do tema (`cartao`, `botao-primario`, `botao-destaque`, `campo`, `selo-*`) |
+| `templates/componentes/_macros.html` | Macros Jinja disponíveis em todas as telas como `ui.*`: cabeçalho, indicador, atalho, placa, campo, botão de envio, dica e estado vazio |
+| `estaticos/app.js` | `chamarApi`, `comEnvio` (envio com aviso de sucesso ou erro, reaproveitado por todos os formulários) e um componente Alpine por tela |
+
+Paleta: azul como cor principal, amarelo para destaques e verde para sucesso. Os cartões têm cantos pouco arredondados, sombra e crescem ao passar o mouse.
 
 ## Funcionalidades
 
@@ -85,8 +97,10 @@ aplicativo/
 | Transferência | UC04/UC07 - elegibilidade para a TEI, com vistoria de 90 dias | Factory Method |
 | Transferências | UC06 - histórico apenas de transferências concluídas | Multiton |
 | Infrações | Consulta, detalhes e descontos de 20% e 40% | Facade + Adapter + Strategy |
+| Boleto da infração | Geração, atualização com desconto, copiar código, imprimir/salvar PDF e compartilhar | Facade + Adapter |
+| Indicação de condutor | Protocolo do condutor responsável pela infração | Adapter |
+| Habilitação | Período da PPD, avisos de mudança de situação e mudança de categoria | State + Observer + Chain of Responsibility |
 | SNE | Adesão validada por CNH ou CRLV | Facade + Strategy |
-| Arquitetura | Camadas e padrões aplicados | - |
 
 A execução da TEI (UC05) **não** foi implementada: a ordem entre aceite, pagamento e efetivação continua sendo uma lacuna do levantamento (Entrega 02).
 
@@ -106,6 +120,13 @@ A execução da TEI (UC05) **não** foi implementada: a ordem entre aceite, paga
 | GET | `/cidadao/infracoes` | Infrações e resumo |
 | GET | `/cidadao/infracoes/{id}` | Detalhe da infração |
 | POST | `/cidadao/infracoes/{id}/descontos` | Solicitação de desconto |
+| POST | `/cidadao/infracoes/{id}/boleto` | Geração do boleto |
+| POST | `/cidadao/infracoes/{id}/indicacao-condutor` | Indicação do condutor |
+| GET | `/cidadao/habilitacao` | Situação da habilitação, avisos e pedidos de categoria |
+| POST | `/cidadao/habilitacao/infracoes` | Registro de infração simulada no histórico da PPD |
+| POST | `/cidadao/habilitacao/conclusao-ppd` | Conclusão do período da PPD |
+| POST | `/cidadao/habilitacao/reinicio` | Nova PPD após a cassação |
+| POST | `/cidadao/habilitacao/alteracoes-categoria` | Validação da mudança de categoria |
 | GET | `/cidadao/sne` | Situação da adesão ao SNE |
 | POST | `/cidadao/sne/adesao` | Adesão ao SNE |
 
@@ -123,5 +144,7 @@ A execução da TEI (UC05) **não** foi implementada: a ordem entre aceite, paga
 - **Compradores para a TEI:** CPF 987.654.321-09 (cadastro completo) e CPF 111.222.333-44 (sem biometria).
 - **Adesão ao SNE por CNH:** CNH 04512345678, código 98765.
 - **Adesão ao SNE por CRLV:** placa JKA1234, RENAVAM 11111111111, número de segurança 54321.
+- **Indicação de condutor:** CPF 987.654.321-09 e qualquer CNH com 11 dígitos.
+- **Habilitação:** a PPD da cidadã de demonstração foi emitida há mais de 12 meses, com uma infração leve. Concluir o período leva a "Definitiva"; registrar antes uma infração grave leva a "Cassada".
 
 Os dados ficam em memória e voltam ao estado inicial quando o servidor reinicia.

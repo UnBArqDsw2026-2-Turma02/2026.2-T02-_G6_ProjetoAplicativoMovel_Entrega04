@@ -18,7 +18,6 @@ docker compose up --build
 | Serviço | Endereço |
 |--|--|
 | Aplicativo (MVP) | <http://127.0.0.1:8000> |
-| API (Swagger) | <http://127.0.0.1:8000/docs> |
 | Documentação (Docsify via Nginx) | <http://127.0.0.1:3000> |
 
 ## Executando sem Docker

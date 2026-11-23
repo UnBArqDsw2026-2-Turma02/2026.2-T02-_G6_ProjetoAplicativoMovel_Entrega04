@@ -31,7 +31,7 @@ O MVP fica na pasta `aplicativo/`. Com o Docker Desktop aberto, na raiz do repos
 docker compose up --build
 ```
 
-- Aplicativo: <http://127.0.0.1:8000> (API em <http://127.0.0.1:8000/docs>)
+- Aplicativo: <http://127.0.0.1:8000>
 - Esta documentação: <http://127.0.0.1:3000>
 
 Sem Docker, com Python 3.10 ou superior: `pip install -r aplicativo/requirements.txt` e `python -m aplicativo`. O manual completo está na página [1.1.3. Aplicativo (MVP)](/Base/Relatorios/1.1.3.AplicativoMVP.md).
