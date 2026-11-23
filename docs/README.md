@@ -75,8 +75,13 @@ O MVP fica na pasta `aplicativo/`. Com o [Python 3.10 ou superior](https://www.p
 
 O script instala o necessário e abre o aplicativo em <http://127.0.0.1:8000>. Depois, é só clicar em **Entrar com gov.br** (login simulado). Também é possível usar o Docker: `docker compose up --build`. O manual completo está na página [1.1.3. Aplicativo (MVP)](/Base/Relatorios/1.1.3.AplicativoMVP.md).
 
-## Informações Complementares 
-Quaisquer outras informações adicionais podem ser descritas nessa seção.
+## Informações Complementares
+
+- **Natureza do estudo:** o DETRAN-DF Digital foi analisado como caixa-preta. A arquitetura do [DAS](/Base/Relatorios/1.1.1.DAS.md) e o MVP são propostas do grupo e não reproduzem o sistema real ([seção 2.8 do DAS](/Base/Relatorios/1.1.1.DAS.md?id=_28-limitações-da-representação)).
+- **Dados simulados:** todos os cidadãos, veículos, infrações e documentos do MVP são fictícios, e o login gov.br não pede nenhum dado.
+- **Tecnologias do MVP:** Python, FastAPI, Jinja2, Tailwind CSS, Alpine.js, pytest, Ruff e Docker ([seção 8.4 do DAS](/Base/Relatorios/1.1.1.DAS.md?id=_84-tecnologias-e-verificação)).
+- **Padrões de projeto integrados:** Multiton, Factory Method e Prototype (SubEquipe 01); Adapter, Facade e Strategy (SubEquipe 02); State, Observer e Chain of Responsibility (SubEquipe 03), todos vindos da Entrega 03.
+- **Código-fonte:** pasta [`aplicativo/`](https://github.com/UnBArqDsw2026-2-Turma02/2026.2-T02-_G6_ProjetoAplicativoMovel_Entrega04/tree/main/aplicativo) do repositório.
 
 ## Histórico de Versão
 
