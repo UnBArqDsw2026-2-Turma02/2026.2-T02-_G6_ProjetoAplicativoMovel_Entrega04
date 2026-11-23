@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from datetime import datetime
+from threading import Lock
 from uuid import uuid4
 
 from aplicativo.dominio.modelos import DadosEmissao
@@ -71,15 +72,19 @@ class EmissorCRLVe:
 class RegistroDocumentosEmitidos:
     def __init__(self) -> None:
         self._documentos: list[DocumentoVeicular] = []
+        self._trava = Lock()
 
     def registrar(self, documento: DocumentoVeicular) -> None:
-        self._documentos.append(documento)
+        with self._trava:
+            self._documentos.append(documento)
 
     def listar(self) -> list[DocumentoVeicular]:
-        return list(self._documentos)
+        with self._trava:
+            return list(self._documentos)
 
     def limpar(self) -> None:
-        self._documentos.clear()
+        with self._trava:
+            self._documentos.clear()
 
 
 PROTOTIPO_CRLVE = CRLVe()

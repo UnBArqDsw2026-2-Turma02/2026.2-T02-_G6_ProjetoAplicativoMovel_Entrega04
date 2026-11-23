@@ -302,8 +302,9 @@ function painelHabilitacao(estadoInicial) {
       }
       const solicitacao = conteudo.dados.solicitacao;
       const pedidoAceito = solicitacao.resultado === "aceita";
+      const rotuloResultado = this.rotulosResultado[solicitacao.resultado] || solicitacao.resultado;
       avisar(
-        `Pedido ${this.rotulosResultado[solicitacao.resultado]}`,
+        `Solicitação ${rotuloResultado}`,
         solicitacao.motivo || conteudo.mensagem,
         pedidoAceito ? "sucesso" : "alerta"
       );
