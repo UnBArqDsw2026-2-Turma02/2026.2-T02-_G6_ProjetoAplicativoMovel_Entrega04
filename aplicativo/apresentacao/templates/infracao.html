@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block titulo %}Infração {{ infracao.identificador }}{% endblock %}
+{% block conteudo %}
+<a href="/infracoes" class="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-800">{{ icone("voltar", "size-4") }} Infrações</a>
+
+<div class="mt-3 grid gap-6 lg:grid-cols-5" x-data='solicitacaoDesconto("{{ infracao.identificador }}", {{ infracao | tojson }})'>
+  <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
+    <p class="font-mono text-xs text-slate-400">{{ infracao.identificador }} · enquadramento {{ infracao.codigo_enquadramento }}</p>
+    <h1 class="mt-1 text-xl font-bold">{{ infracao.descricao }}</h1>
+    <dl class="mt-5 grid grid-cols-2 gap-4 text-sm">
+      <div><dt class="text-slate-400">Placa</dt><dd class="font-semibold">{{ infracao.placa }}</dd></div>
+      <div><dt class="text-slate-400">Data</dt><dd class="font-semibold">{{ infracao.data_cometimento }}</dd></div>
+      <div class="col-span-2"><dt class="text-slate-400">Local</dt><dd class="font-semibold">{{ infracao.local }}</dd></div>
+      <div><dt class="text-slate-400">Órgão autuador</dt><dd class="font-semibold">{{ infracao.orgao_autuador }}</dd></div>
+      <div><dt class="text-slate-400">Vencimento</dt><dd class="font-semibold">{{ infracao.vencimento }}</dd></div>
+      <div><dt class="text-slate-400">Valor original</dt><dd class="font-semibold">{{ infracao.valor_original | moeda }}</dd></div>
+      <div><dt class="text-slate-400">Valor a pagar</dt><dd class="text-lg font-bold text-blue-800" x-text="formatarMoeda(infracao.valor_a_pagar)"></dd></div>
+    </dl>
+    <p class="mt-5 rounded-xl bg-slate-50 p-3 text-xs text-slate-500">Política de desconto (Strategy): <strong>{{ infracao.politica_desconto }}</strong></p>
+  </section>
+
+  <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-2">
+    <h2 class="text-lg font-semibold">Desconto</h2>
+    <template x-if="infracao.percentual_desconto_aplicado">
+      <p class="mt-2 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800" x-text="`Desconto de ${infracao.percentual_desconto_aplicado}% aplicado.`"></p>
+    </template>
+    <template x-if="!infracao.opcoes_desconto.length">
+      <p class="mt-2 text-sm text-slate-500">Esta infração não possui desconto disponível.</p>
+    </template>
+    <form class="mt-4 space-y-3" x-show="infracao.opcoes_desconto.length && !infracao.percentual_desconto_aplicado" @submit.prevent="solicitar()">
+      <template x-for="opcao in infracao.opcoes_desconto" :key="opcao.percentual">
+        <label class="flex cursor-pointer items-center justify-between gap-3 rounded-xl border p-4 transition"
+               :class="percentualEscolhido === opcao.percentual ? 'border-blue-600 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'">
+          <span class="flex items-center gap-3">
+            <input type="radio" name="percentual" :value="opcao.percentual" x-model.number="percentualEscolhido" :disabled="!opcao.liberado" class="size-4">
+            <span>
+              <span class="block font-semibold" x-text="`${opcao.percentual}% de desconto`"></span>
+              <span class="block text-xs text-slate-500" x-text="opcao.exige_sne ? (opcao.liberado ? 'Exclusivo para quem aderiu ao SNE' : 'Requer adesão ao SNE') : 'Disponível'"></span>
+            </span>
+          </span>
+          <span class="font-bold" x-text="formatarMoeda(opcao.valor_final)"></span>
+        </label>
+      </template>
+      <label class="flex items-start gap-2 text-sm" x-show="exigeTermo">
+        <input type="checkbox" x-model="termoAceito" class="mt-0.5 size-4"> Reconheço a infração e desisto de apresentar defesa ou recurso.
+      </label>
+      <button type="submit" :disabled="enviando || !percentualEscolhido"
+              class="w-full rounded-xl bg-blue-700 px-4 py-3 font-semibold text-white shadow transition hover:bg-blue-800 disabled:opacity-50"
+              x-text="enviando ? 'Enviando...' : 'Aplicar desconto'"></button>
+      {% if not cidadao.aderiu_sne %}
+      <a href="/sne" class="block text-center text-sm font-medium text-indigo-700 hover:underline">Aderir ao SNE para liberar 40%</a>
+      {% endif %}
+    </form>
+  </section>
+</div>
+{% endblock %}

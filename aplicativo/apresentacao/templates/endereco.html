@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block titulo %}Endereço {{ veiculo.placa }}{% endblock %}
+{% block conteudo %}
+{% include "_cabecalho_veiculo.html" %}
+
+<div class="mt-6 grid gap-6 lg:grid-cols-5" x-data="formularioEndereco('{{ uf }}', '{{ veiculo.placa }}')">
+  <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
+    <h2 class="text-lg font-semibold">Alterar endereço do veículo</h2>
+    <p class="mt-1 text-sm text-slate-500">Serviço gratuito (UC03). O novo endereço deve estar no DF e não pode ser caixa postal.</p>
+    <form class="mt-5 grid gap-4 sm:grid-cols-2" @submit.prevent="enviar()">
+      <label class="block text-sm font-medium">UF
+        <select x-model="ufDestino" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200">
+          <option value="DF">DF</option><option value="GO">GO</option><option value="SP">SP</option>
+        </select>
+      </label>
+      <label class="block text-sm font-medium">CEP
+        <input x-model="cep" inputmode="numeric" placeholder="70000-000" required
+               class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200">
+      </label>
+      <label class="block text-sm font-medium sm:col-span-2">Logradouro
+        <input x-model="logradouro" placeholder="Quadra, bloco, número" required minlength="3"
+               class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200">
+      </label>
+      <label class="flex items-center gap-2 text-sm sm:col-span-2">
+        <input type="checkbox" x-model="caixaPostal" class="size-4 rounded border-slate-300"> É caixa postal
+      </label>
+      <button type="submit" :disabled="enviando"
+              class="flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-4 py-3 font-semibold text-white shadow transition hover:bg-blue-800 disabled:opacity-60 sm:col-span-2">
+        {{ icone("endereco") }} <span x-text="enviando ? 'Salvando...' : 'Salvar novo endereço'"></span>
+      </button>
+    </form>
+  </section>
+
+  <aside class="space-y-4 lg:col-span-2">
+    <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <p class="text-xs uppercase tracking-wide text-slate-400">Endereço cadastrado</p>
+      <template x-if="!enderecoAtualizado">
+        <div>
+          <p class="mt-1 font-semibold">{{ veiculo.endereco.logradouro }}</p>
+          <p class="text-sm text-slate-500">{{ veiculo.endereco.uf }} · CEP {{ veiculo.endereco.cep }}</p>
+        </div>
+      </template>
+      <template x-if="enderecoAtualizado">
+        <div>
+          <p class="mt-1 font-semibold text-emerald-700" x-text="enderecoAtualizado.logradouro"></p>
+          <p class="text-sm text-slate-500" x-text="`${enderecoAtualizado.uf} · CEP ${enderecoAtualizado.cep}`"></p>
+        </div>
+      </template>
+    </div>
+    <div class="rounded-2xl bg-blue-50 p-5 text-sm text-blue-900">
+      <h3 class="font-semibold">Regras aplicadas</h3>
+      <ul class="mt-2 list-inside list-disc space-y-1">
+        <li>Endereço no Distrito Federal</li>
+        <li>CEP obrigatório e sem caixa postal</li>
+        <li>Sem débitos vencidos</li>
+        <li>Sem restrição administrativa ou judicial</li>
+      </ul>
+    </div>
+  </aside>
+</div>
+{% endblock %}

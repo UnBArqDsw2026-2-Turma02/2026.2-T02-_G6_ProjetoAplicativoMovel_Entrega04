@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block titulo %}Não encontrado{% endblock %}
+{% block conteudo %}
+<section class="mx-auto max-w-lg rounded-3xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-200">
+  <span class="mx-auto grid size-14 place-items-center rounded-2xl bg-amber-50 text-amber-600">{{ icone("alerta", "size-8") }}</span>
+  <h1 class="mt-4 text-xl font-bold">Não foi possível abrir esta página</h1>
+  <p class="mt-2 text-slate-500">{{ mensagem }}</p>
+  <a href="/inicio" class="mt-6 inline-flex rounded-xl bg-blue-700 px-5 py-2.5 font-semibold text-white hover:bg-blue-800">Voltar ao início</a>
+</section>
+{% endblock %}

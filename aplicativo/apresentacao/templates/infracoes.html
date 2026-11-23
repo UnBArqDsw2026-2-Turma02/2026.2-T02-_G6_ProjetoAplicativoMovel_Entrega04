@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block titulo %}Infrações{% endblock %}
+{% block conteudo %}
+{% set rotulos_situacao = {"a_vencer": ("A vencer", "bg-blue-100 text-blue-700"), "vencida": ("Vencida", "bg-rose-100 text-rose-700"), "paga": ("Paga", "bg-emerald-100 text-emerald-700")} %}
+
+<h1 class="text-2xl font-bold">Infrações</h1>
+<p class="mt-1 text-sm text-slate-500">Consulta unificada nos órgãos autuadores (Facade + Adapter). Descontos conforme a política de cada órgão (Strategy).</p>
+
+<section class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+  <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200"><p class="text-xs text-slate-400">Total</p><p class="text-2xl font-bold">{{ resumo.quantidade_total }}</p></div>
+  <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200"><p class="text-xs text-slate-400">Em aberto</p><p class="text-2xl font-bold text-rose-600">{{ resumo.quantidade_em_aberto }}</p></div>
+  <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200"><p class="text-xs text-slate-400">Com desconto</p><p class="text-2xl font-bold text-emerald-600">{{ resumo.quantidade_com_desconto_disponivel }}</p></div>
+  <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200"><p class="text-xs text-slate-400">Valor em aberto</p><p class="text-xl font-bold">{{ resumo.valor_em_aberto | moeda }}</p></div>
+</section>
+
+{% if not cidadao.aderiu_sne %}
+<a href="/sne" class="mt-4 flex items-center gap-3 rounded-2xl bg-indigo-50 p-4 text-sm text-indigo-900 ring-1 ring-indigo-200 hover:bg-indigo-100">
+  {{ icone("notificacao", "size-6 shrink-0") }}
+  <span>Adira ao SNE para liberar <strong>40% de desconto</strong> nas infrações de órgãos aderentes.</span>
+  {{ icone("avancar", "ml-auto size-4") }}
+</a>
+{% endif %}
+
+<section class="mt-6 space-y-3">
+  {% for infracao in infracoes %}
+  {% set rotulo, classes = rotulos_situacao[infracao.situacao] %}
+  <a href="/infracoes/{{ infracao.identificador }}" class="group block rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:shadow-md">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="rounded-full px-2.5 py-0.5 text-xs font-medium {{ classes }}">{{ rotulo }}</span>
+          <span class="font-mono text-xs text-slate-400">{{ infracao.identificador }} · {{ infracao.placa }}</span>
+        </div>
+        <p class="mt-2 font-semibold">{{ infracao.descricao }}</p>
+        <p class="text-sm text-slate-500">{{ infracao.local }} · {{ infracao.data_cometimento }}</p>
+      </div>
+      <div class="text-right">
+        <p class="text-lg font-bold">{{ infracao.valor_a_pagar | moeda }}</p>
+        {% if infracao.percentual_desconto_aplicado %}
+        <p class="text-xs text-emerald-600">{{ infracao.percentual_desconto_aplicado }}% de desconto aplicado</p>
+        {% elif infracao.opcoes_desconto %}
+        <p class="text-xs text-emerald-600">Até {{ infracao.opcoes_desconto | map(attribute="percentual") | max }}% de desconto</p>
+        {% endif %}
+        <p class="text-xs text-slate-400">Vence em {{ infracao.vencimento }}</p>
+      </div>
+    </div>
+  </a>
+  {% else %}
+  <p class="rounded-2xl bg-white p-6 text-center text-slate-500 shadow-sm">Nenhuma infração encontrada.</p>
+  {% endfor %}
+</section>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block titulo %}CRLV-e {{ veiculo.placa }}{% endblock %}
+{% block conteudo %}
+{% include "_cabecalho_veiculo.html" %}
+
+<div class="mt-6 grid gap-6 lg:grid-cols-5" x-data="emissaoCrlve('{{ uf }}', '{{ veiculo.placa }}', {{ exercicio_atual }})" x-init="iniciar()">
+  <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-2">
+    <h2 class="text-lg font-semibold">Emitir CRLV-e</h2>
+    <p class="mt-1 text-sm text-slate-500">O documento só é emitido quando não há débitos vencidos, restrições ou licenciamento pendente (UC02).</p>
+    {% if veiculo.possui_pendencias_impeditivas %}
+    <p class="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">Este veículo possui pendências. A emissão será bloqueada.</p>
+    {% endif %}
+    <form class="mt-5 space-y-4" @submit.prevent="emitir()">
+      <label class="block text-sm font-medium">Exercício
+        <input type="number" min="2000" max="{{ exercicio_atual }}" x-model="exercicio" required
+               class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200">
+      </label>
+      <button type="submit" :disabled="emitindo"
+              class="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-700 px-4 py-3 font-semibold text-white shadow transition hover:bg-blue-800 disabled:opacity-60">
+        {{ icone("documento") }} <span x-text="emitindo ? 'Emitindo...' : 'Emitir CRLV-e'"></span>
+      </button>
+    </form>
+
+    <template x-if="pendencias.length">
+      <div class="mt-5">
+        <h3 class="text-sm font-semibold text-rose-700">Pendências encontradas</h3>
+        <ul class="mt-2 space-y-1.5 text-sm">
+          <template x-for="pendencia in pendencias" :key="pendencia">
+            <li class="rounded-lg bg-rose-50 px-3 py-2 text-rose-800" x-text="pendencia"></li>
+          </template>
+        </ul>
+      </div>
+    </template>
+  </section>
+
+  <section class="lg:col-span-3">
+    <template x-if="documento">
+      <article class="overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-emerald-200">
+        <header class="flex items-center justify-between bg-gradient-to-r from-emerald-700 to-teal-600 px-6 py-4 text-white">
+          <div>
+            <p class="text-xs uppercase tracking-widest text-emerald-100">Certificado de Registro e Licenciamento de Veículo</p>
+            <p class="text-xl font-bold" x-text="`${documento.tipo} · Exercício ${documento.exercicio}`"></p>
+          </div>
+          {{ icone("escudo", "size-10") }}
+        </header>
+        <dl class="grid grid-cols-2 gap-4 p-6 text-sm">
+          <div><dt class="text-slate-400">Placa</dt><dd class="font-mono text-lg font-bold" x-text="documento.placa"></dd></div>
+          <div><dt class="text-slate-400">RENAVAM</dt><dd class="font-semibold" x-text="documento.renavam"></dd></div>
+          <div><dt class="text-slate-400">Marca/Modelo</dt><dd class="font-semibold" x-text="documento.marca_modelo"></dd></div>
+          <div><dt class="text-slate-400">Proprietário</dt><dd class="font-semibold" x-text="documento.nome_proprietario"></dd></div>
+          <div><dt class="text-slate-400">Emitido em</dt><dd class="font-semibold" x-text="documento.emitido_em"></dd></div>
+          <div><dt class="text-slate-400">Código de autenticação</dt><dd class="font-mono font-semibold" x-text="documento.codigo_autenticacao"></dd></div>
+        </dl>
+        <footer class="border-t border-slate-100 px-6 py-3 text-xs text-slate-400" x-text="`${documento.orgao_emissor} · layout ${documento.versao_layout} · documento simulado`"></footer>
+      </article>
+    </template>
+    <template x-if="!documento">
+      <div class="grid h-full min-h-48 place-items-center rounded-2xl border-2 border-dashed border-slate-300 p-6 text-center text-slate-400">
+        <div>{{ icone("documento", "mx-auto size-10") }}<p class="mt-2 text-sm">O CRLV-e emitido aparecerá aqui.</p></div>
+      </div>
+    </template>
+  </section>
+
+  <section class="rounded-2xl bg-slate-900 p-6 text-slate-100 shadow-sm lg:col-span-5" x-show="estadoPrototipo" x-cloak>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h2 class="font-semibold">Prova do Prototype</h2>
+      <div class="flex gap-2 text-xs">
+        <span class="rounded-full px-2.5 py-1" :class="estadoPrototipo?.prototipo_permanece_vazio ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'"
+              x-text="estadoPrototipo?.prototipo_permanece_vazio ? 'Protótipo continua vazio' : 'Protótipo alterado'"></span>
+        <span class="rounded-full px-2.5 py-1" :class="estadoPrototipo?.todos_independentes ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'"
+              x-text="estadoPrototipo?.todos_independentes ? 'Clones independentes' : 'Clones compartilham objeto'"></span>
+      </div>
+    </div>
+    <p class="mt-2 text-sm text-slate-400">Cada emissão clona o <code>CRLVe</code> base com <code>deepcopy</code>; o protótipo nunca recebe dados do veículo.</p>
+    <div class="mt-4 overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="text-xs uppercase text-slate-400"><tr><th class="py-2 pr-4">Objeto</th><th class="py-2 pr-4">Placa</th><th class="py-2 pr-4">Exercício</th><th class="py-2">Identificador em memória</th></tr></thead>
+        <tbody class="divide-y divide-slate-800">
+          <tr><td class="py-2 pr-4 font-semibold text-amber-300">Protótipo</td><td class="py-2 pr-4" x-text="estadoPrototipo?.prototipo.placa ?? '—'"></td><td class="py-2 pr-4" x-text="estadoPrototipo?.prototipo.exercicio ?? '—'"></td><td class="py-2 font-mono" x-text="estadoPrototipo?.prototipo.identificador_objeto"></td></tr>
+          <template x-for="emitido in estadoPrototipo?.documentos ?? []" :key="emitido.identificador_objeto">
+            <tr><td class="py-2 pr-4">Clone</td><td class="py-2 pr-4" x-text="emitido.placa"></td><td class="py-2 pr-4" x-text="emitido.exercicio"></td><td class="py-2 font-mono" x-text="emitido.identificador_objeto"></td></tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

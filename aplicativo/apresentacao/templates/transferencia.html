@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block titulo %}Transferência {{ veiculo.placa }}{% endblock %}
+{% block conteudo %}
+{% include "_cabecalho_veiculo.html" %}
+
+<div class="mt-6 grid gap-6 lg:grid-cols-5" x-data="verificacaoTei('{{ uf }}', '{{ veiculo.placa }}')">
+  <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-2">
+    <h2 class="text-lg font-semibold">Transferência Eletrônica Inteligente</h2>
+    <p class="mt-1 text-sm text-slate-500">Verifique se a venda pode ser feita pela TEI (UC04). Você atua como vendedor.</p>
+    <form class="mt-5 space-y-4" @submit.prevent="verificar()">
+      <label class="block text-sm font-medium">CPF do comprador
+        <input x-model="cpfComprador" inputmode="numeric" placeholder="000.000.000-00" required
+               class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200">
+      </label>
+      <p class="text-xs text-slate-400">Para testar: 987.654.321-09 (cadastro completo) ou 111.222.333-44 (sem biometria).</p>
+      <button type="submit" :disabled="verificando"
+              class="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-700 px-4 py-3 font-semibold text-white shadow transition hover:bg-blue-800 disabled:opacity-60">
+        {{ icone("transferencia") }} <span x-text="verificando ? 'Verificando...' : 'Verificar elegibilidade'"></span>
+      </button>
+    </form>
+  </section>
+
+  <section class="lg:col-span-3">
+    <template x-if="resultado">
+      <div class="space-y-4">
+        <div class="rounded-2xl p-5"
+             :class="{ 'bg-emerald-50 ring-1 ring-emerald-200': resultado.proximo_passo === 'execucao_tei', 'bg-amber-50 ring-1 ring-amber-200': resultado.proximo_passo === 'providenciar_vistoria', 'bg-rose-50 ring-1 ring-rose-200': resultado.proximo_passo === 'procedimento_tradicional' }">
+          <p class="font-semibold" x-text="mensagem"></p>
+          <p class="mt-1 text-sm text-slate-600" x-show="resultado.proximo_passo === 'execucao_tei'">
+            A execução da TEI (UC05) não é simulada: a ordem entre aceite, pagamento e efetivação continua como lacuna do levantamento.
+          </p>
+        </div>
+        <ol class="space-y-2">
+          <template x-for="requisito in resultado.requisitos" :key="requisito.descricao">
+            <li class="flex items-center gap-3 rounded-xl bg-white px-4 py-3 text-sm shadow-sm ring-1 ring-slate-200">
+              <span class="grid size-6 shrink-0 place-items-center rounded-full text-xs font-bold text-white" :class="requisito.atendido ? 'bg-emerald-500' : 'bg-rose-500'" x-text="requisito.atendido ? '✓' : '✕'"></span>
+              <span x-text="requisito.descricao"></span>
+            </li>
+          </template>
+          <li class="flex items-center gap-3 rounded-xl bg-white px-4 py-3 text-sm shadow-sm ring-1 ring-slate-200">
+            <span class="grid size-6 shrink-0 place-items-center rounded-full text-xs font-bold text-white" :class="resultado.vistoria_valida ? 'bg-emerald-500' : 'bg-amber-500'" x-text="resultado.vistoria_valida ? '✓' : '!'"></span>
+            <span>Vistoria em ECV credenciada dentro da validade de 90 dias</span>
+          </li>
+        </ol>
+      </div>
+    </template>
+    <template x-if="!resultado">
+      <div class="grid h-full min-h-48 place-items-center rounded-2xl border-2 border-dashed border-slate-300 p-6 text-center text-slate-400">
+        <div>{{ icone("transferencia", "mx-auto size-10") }}<p class="mt-2 text-sm">Os requisitos verificados aparecerão aqui.</p></div>
+      </div>
+    </template>
+  </section>
+</div>
+{% endblock %}

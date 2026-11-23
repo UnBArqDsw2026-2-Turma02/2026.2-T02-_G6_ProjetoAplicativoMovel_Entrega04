@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block titulo %}SNE{% endblock %}
+{% block conteudo %}
+<div x-data="adesaoSne({{ situacao_sne.aderiu | tojson }})">
+  <section class="rounded-3xl bg-gradient-to-br from-indigo-700 to-violet-700 p-6 text-white shadow-lg">
+    <div class="flex items-center gap-4">
+      <span class="grid size-14 place-items-center rounded-2xl bg-white/15">{{ icone("notificacao", "size-8") }}</span>
+      <div>
+        <h1 class="text-2xl font-bold">Sistema de Notificação Eletrônica</h1>
+        <p class="text-sm text-indigo-100">Receba notificações de infração pelo aplicativo e tenha até 40% de desconto.</p>
+      </div>
+    </div>
+    <p class="mt-4 inline-flex rounded-full px-3 py-1 text-sm font-semibold" :class="aderiu ? 'bg-emerald-400/20 text-emerald-100' : 'bg-white/15'"
+       x-text="aderiu ? 'Você já aderiu ao SNE' : 'Você ainda não aderiu'"></p>
+  </section>
+
+  <section class="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200" x-show="!aderiu">
+    <h2 class="text-lg font-semibold">Confirmar adesão</h2>
+    <p class="mt-1 text-sm text-slate-500">Escolha o documento para confirmar sua identidade. Cada documento tem sua própria validação (Strategy).</p>
+    <div class="mt-4 inline-flex rounded-full bg-slate-100 p-1">
+      <button type="button" @click="tipoDocumento = 'cnh'" class="rounded-full px-4 py-1.5 text-sm font-medium" :class="tipoDocumento === 'cnh' ? 'bg-white shadow' : 'text-slate-500'">CNH</button>
+      <button type="button" @click="tipoDocumento = 'crlv'" class="rounded-full px-4 py-1.5 text-sm font-medium" :class="tipoDocumento === 'crlv' ? 'bg-white shadow' : 'text-slate-500'">CRLV</button>
+    </div>
+    <form class="mt-5 grid gap-4 sm:grid-cols-2" @submit.prevent="aderir()">
+      <template x-if="tipoDocumento === 'cnh'">
+        <div class="contents">
+          <label class="block text-sm font-medium">Número da CNH
+            <input x-model="numeroCnh" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+          </label>
+          <label class="block text-sm font-medium">Código de segurança
+            <input x-model="codigoSegurancaCnh" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+          </label>
+          <p class="text-xs text-slate-400 sm:col-span-2">Para testar: CNH 04512345678 e código 98765.</p>
+        </div>
+      </template>
+      <template x-if="tipoDocumento === 'crlv'">
+        <div class="contents">
+          <label class="block text-sm font-medium">Placa
+            <input x-model="placa" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 uppercase focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+          </label>
+          <label class="block text-sm font-medium">RENAVAM
+            <input x-model="renavam" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+          </label>
+          <label class="block text-sm font-medium sm:col-span-2">Número de segurança do CRV
+            <input x-model="numeroSegurancaCrv" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+          </label>
+          <p class="text-xs text-slate-400 sm:col-span-2">Para testar: placa JKA1234, RENAVAM 11111111111 e número 54321.</p>
+        </div>
+      </template>
+      <button type="submit" :disabled="enviando" class="rounded-xl bg-indigo-700 px-4 py-3 font-semibold text-white shadow transition hover:bg-indigo-800 disabled:opacity-60 sm:col-span-2"
+              x-text="enviando ? 'Confirmando...' : 'Aderir ao SNE'"></button>
+    </form>
+  </section>
+
+  <section class="mt-6 rounded-2xl bg-emerald-50 p-6 text-emerald-900 ring-1 ring-emerald-200" x-show="aderiu" x-cloak>
+    <h2 class="font-semibold">Adesão ativa</h2>
+    <p class="mt-1 text-sm">O desconto de 40% está liberado nas infrações de órgãos aderentes ao SNE.</p>
+    <p class="mt-2 font-mono text-sm" x-show="protocolo" x-text="`Protocolo ${protocolo}`"></p>
+    {% if situacao_sne.adesao %}<p class="mt-2 font-mono text-sm">Protocolo {{ situacao_sne.adesao.protocolo }}</p>{% endif %}
+    <a href="/infracoes" class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-emerald-800 hover:underline">Ver infrações {{ icone("avancar", "size-4") }}</a>
+  </section>
+</div>
+{% endblock %}
