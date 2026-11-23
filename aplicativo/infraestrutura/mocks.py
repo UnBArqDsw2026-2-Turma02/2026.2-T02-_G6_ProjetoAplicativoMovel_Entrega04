@@ -15,6 +15,12 @@ def gerar_protocolo(prefixo: str) -> str:
     return f"{prefixo}-{uuid4().hex[:8].upper()}"
 
 
+def gerar_codigo_pagamento() -> str:
+    digitos = "".join(str(secrets.randbelow(10)) for _ in range(47))
+    blocos = [digitos[0:5], digitos[5:10], digitos[10:15], digitos[15:21], digitos[21:26], digitos[26:32]]
+    return f"{blocos[0]}.{blocos[1]} {blocos[2]}.{blocos[3]} {blocos[4]}.{blocos[5]} {digitos[32]} {digitos[33:47]}"
+
+
 class RepositorioCidadaosMemoria:
     def __init__(self, cidadaos: list[Cidadao]) -> None:
         self._cidadaos_por_cpf = {cidadao.cpf: cidadao for cidadao in cidadaos}
@@ -66,6 +72,48 @@ class ApiOrgaoAutuadorMock:
     def registrar_beneficio(self, codigo_auto: str, percentual: int) -> dict:
         self._autos_por_codigo[codigo_auto]["pct_beneficio"] = str(percentual)
         return {"cod_retorno": "00", "protocolo": gerar_protocolo("DESC")}
+
+
+class ApiBoletoMock:
+    def __init__(self) -> None:
+        self._boletos_por_infracao: dict[str, dict] = {}
+
+    def consultar_boleto(self, id_infracao: str) -> dict | None:
+        boleto = self._boletos_por_infracao.get(id_infracao)
+        return deepcopy(boleto) if boleto else None
+
+    def emitir_boleto(
+        self, id_infracao: str, numero_auto: str, data_vencimento: str, valor_original: float, percentual: int
+    ) -> dict:
+        identificador_boleto = gerar_protocolo("BOL")
+        boleto = {
+            "boletoId": identificador_boleto,
+            "idInfracao": id_infracao,
+            "status": "PRONTO",
+            "numeroAuto": numero_auto,
+            "dataVencimento": data_vencimento,
+            "valorOriginal": f"{valor_original:.2f}",
+            "percentualDesconto": str(percentual),
+            "codigoPagamento": gerar_codigo_pagamento(),
+            "arquivoPDF": f"boleto_{numero_auto.lower()}.pdf",
+        }
+        self._boletos_por_infracao[id_infracao] = boleto
+        return deepcopy(boleto)
+
+    def atualizar_desconto(self, id_infracao: str, percentual: int) -> dict:
+        boleto = self._boletos_por_infracao[id_infracao]
+        boleto["percentualDesconto"] = str(percentual)
+        boleto["codigoPagamento"] = gerar_codigo_pagamento()
+        return deepcopy(boleto)
+
+
+class ServicoIndicacaoLegadoMock:
+    def __init__(self) -> None:
+        self.chamadas: list[dict] = []
+
+    def registrar_indicacao(self, dados_legados: dict) -> dict:
+        self.chamadas.append(deepcopy(dados_legados))
+        return {"numero_protocolo": f"IND-{len(self.chamadas):04d}", "status_envio": "RECEBIDO"}
 
 
 class ApiSneMock:

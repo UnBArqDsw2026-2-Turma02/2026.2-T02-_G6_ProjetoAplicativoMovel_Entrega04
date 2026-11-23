@@ -31,6 +31,11 @@ class TipoDocumentoSNE(str, Enum):
     CRLV = "crlv"
 
 
+class SituacaoBoleto(str, Enum):
+    PROCESSANDO = "processando"
+    PRONTO = "pronto"
+
+
 @dataclass
 class Endereco:
     uf: str
@@ -156,6 +161,27 @@ class Infracao:
     @property
     def valor_a_pagar(self) -> float:
         return self.valor_com_desconto(self.percentual_desconto_aplicado)
+
+
+@dataclass
+class Boleto:
+    identificador: str
+    identificador_infracao: str
+    numero_auto: str
+    vencimento: date
+    valor_original: float
+    percentual_desconto: int
+    codigo_pagamento: str
+    nome_arquivo: str
+    situacao: SituacaoBoleto
+
+    @property
+    def valor_desconto(self) -> float:
+        return round(self.valor_original * self.percentual_desconto / 100, 2)
+
+    @property
+    def valor_a_pagar(self) -> float:
+        return round(self.valor_original - self.valor_desconto, 2)
 
 
 @dataclass

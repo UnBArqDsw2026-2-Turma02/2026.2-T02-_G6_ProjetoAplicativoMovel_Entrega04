@@ -1,6 +1,9 @@
+from datetime import date
 from threading import Lock
 
-from aplicativo.dominio.modelos import Cidadao, Infracao, ResultadoOperacao, SituacaoInfracao
+from aplicativo.dominio.modelos import Boleto, Cidadao, Infracao, ResultadoOperacao, SituacaoInfracao
+from aplicativo.padroes.adapter.boleto import GatewayBoleto
+from aplicativo.padroes.adapter.indicacao_condutor import PedidoIndicacao, PortaProtocolo
 from aplicativo.padroes.adapter.orgao_autuador import GatewayInfracoes
 from aplicativo.padroes.strategy.politicas_desconto import ContextoBeneficioInfracao, selecionar_politica_desconto
 
@@ -8,8 +11,16 @@ PERCENTUAL_EXCLUSIVO_SNE = 40
 
 
 class InfracoesFacade:
-    def __init__(self, gateway_infracoes: GatewayInfracoes) -> None:
+    def __init__(
+        self,
+        gateway_infracoes: GatewayInfracoes,
+        gateway_boleto: GatewayBoleto,
+        porta_indicacao: PortaProtocolo,
+    ) -> None:
         self._gateway_infracoes = gateway_infracoes
+        self._gateway_boleto = gateway_boleto
+        self._porta_indicacao = porta_indicacao
+        self._indicacoes_por_infracao: dict[str, dict] = {}
         self._trava_solicitacoes = Lock()
 
     def listar_infracoes(self, cidadao: Cidadao) -> list[dict]:
@@ -63,12 +74,81 @@ class InfracoesFacade:
             return ResultadoOperacao(False, "O desconto de 40% exige o aceite do termo de reconhecimento da infração.")
 
         protocolo = self._gateway_infracoes.enviar_solicitacao_desconto(infracao, percentual)
+        if self._gateway_boleto.consultar(infracao.identificador):
+            self._gateway_boleto.atualizar_desconto(infracao.identificador, percentual)
         infracao_atualizada = self._gateway_infracoes.buscar(cidadao.cpf, identificador_infracao)
         return ResultadoOperacao(
             True,
             f"Desconto de {percentual}% aplicado. Protocolo {protocolo}.",
             {"protocolo": protocolo, "infracao": self._descrever_infracao(infracao_atualizada, cidadao)},
         )
+
+    def solicitar_boleto(self, cidadao: Cidadao, identificador_infracao: str) -> ResultadoOperacao:
+        with self._trava_solicitacoes:
+            infracao = self._gateway_infracoes.buscar(cidadao.cpf, identificador_infracao)
+            if infracao.situacao == SituacaoInfracao.PAGA:
+                return ResultadoOperacao(False, "Não é possível solicitar boleto para infração paga.")
+            boleto_existente = self._gateway_boleto.consultar(infracao.identificador)
+            if boleto_existente:
+                return ResultadoOperacao(
+                    True,
+                    "Já existe um boleto para esta infração. Nenhum novo pedido foi enviado.",
+                    {"boleto": self._descrever_boleto(boleto_existente)},
+                )
+            vencimento = max(infracao.vencimento, date.today())
+            boleto = self._gateway_boleto.emitir(infracao, vencimento)
+            return ResultadoOperacao(True, "Boleto gerado.", {"boleto": self._descrever_boleto(boleto)})
+
+    def obter_boleto(self, cidadao: Cidadao, identificador_infracao: str) -> dict | None:
+        infracao = self._gateway_infracoes.buscar(cidadao.cpf, identificador_infracao)
+        boleto = self._gateway_boleto.consultar(infracao.identificador)
+        return self._descrever_boleto(boleto) if boleto else None
+
+    def indicar_condutor(
+        self, cidadao: Cidadao, identificador_infracao: str, cpf_condutor: str, numero_cnh_condutor: str
+    ) -> ResultadoOperacao:
+        with self._trava_solicitacoes:
+            infracao = self._gateway_infracoes.buscar(cidadao.cpf, identificador_infracao)
+            if infracao.situacao == SituacaoInfracao.PAGA:
+                return ResultadoOperacao(False, "Não é possível indicar condutor para infração paga.")
+            if infracao.identificador in self._indicacoes_por_infracao:
+                return ResultadoOperacao(False, "Já existe uma indicação de condutor para esta infração.")
+            if cpf_condutor == cidadao.cpf:
+                return ResultadoOperacao(False, "O condutor indicado deve ser outra pessoa.")
+            pedido = PedidoIndicacao(
+                auto=infracao.identificador,
+                requerente_id=cidadao.cpf,
+                condutor_id=cpf_condutor,
+                anexos=(f"cnh_{numero_cnh_condutor}.pdf",),
+            )
+            recibo = self._porta_indicacao.protocolar(pedido)
+            indicacao = {
+                "protocolo": recibo.numero,
+                "situacao": recibo.situacao,
+                "cpf_condutor_mascarado": f"***.{cpf_condutor[3:6]}.{cpf_condutor[6:9]}-**",
+                "data": date.today().strftime("%d/%m/%Y"),
+            }
+            self._indicacoes_por_infracao[infracao.identificador] = indicacao
+            return ResultadoOperacao(
+                True,
+                f"Indicação recebida. Protocolo {recibo.numero}. O recebimento não significa aprovação.",
+                {"indicacao": indicacao},
+            )
+
+    @staticmethod
+    def _descrever_boleto(boleto: Boleto) -> dict:
+        return {
+            "identificador": boleto.identificador,
+            "numero_auto": boleto.numero_auto,
+            "situacao": boleto.situacao.value,
+            "vencimento": boleto.vencimento.strftime("%d/%m/%Y"),
+            "valor_original": boleto.valor_original,
+            "percentual_desconto": boleto.percentual_desconto,
+            "valor_desconto": boleto.valor_desconto,
+            "valor_a_pagar": boleto.valor_a_pagar,
+            "codigo_pagamento": boleto.codigo_pagamento,
+            "nome_arquivo": boleto.nome_arquivo,
+        }
 
     def _calcular_percentuais(
         self, infracao: Infracao, cidadao: Cidadao, incluir_exclusivos_sne: bool = False
@@ -83,6 +163,7 @@ class InfracoesFacade:
     def _descrever_infracao(self, infracao: Infracao, cidadao: Cidadao) -> dict:
         politica = selecionar_politica_desconto(infracao)
         percentuais_da_politica = politica.percentuais_disponiveis()
+        boleto = self._gateway_boleto.consultar(infracao.identificador)
         return {
             "identificador": infracao.identificador,
             "placa": infracao.placa,
@@ -98,6 +179,8 @@ class InfracoesFacade:
             "valor_original": infracao.valor_original,
             "percentual_desconto_aplicado": infracao.percentual_desconto_aplicado,
             "valor_a_pagar": infracao.valor_a_pagar,
+            "boleto": self._descrever_boleto(boleto) if boleto else None,
+            "indicacao_condutor": self._indicacoes_por_infracao.get(infracao.identificador),
             "opcoes_desconto": [
                 {
                     "percentual": percentual,

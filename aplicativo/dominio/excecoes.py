@@ -16,3 +16,11 @@ class SessaoNaoAutenticada(ErroDeNegocio):
 
 class AcessoNegado(ErroDeNegocio):
     pass
+
+
+class OperacaoNaoPermitida(ErroDeNegocio):
+    pass
+
+
+class ErroIntegracao(ErroDeNegocio):
+    pass
