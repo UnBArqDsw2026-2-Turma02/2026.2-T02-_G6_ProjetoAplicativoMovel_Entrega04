@@ -290,14 +290,23 @@ function painelHabilitacao(estadoInicial) {
       );
     },
     async solicitarCategoria() {
-      const { ok, conteudo } = await this.executar(
-        "/alteracoes-categoria",
-        { categoria_desejada: this.categoriaDesejada },
-        { tituloSucesso: "Pedido validado", tituloErro: "Pedido não validado", tipoSucesso: "informacao" }
-      );
-      if (ok && conteudo.dados.solicitacao.resultado !== "aceita") {
-        avisar("Resultado", conteudo.dados.solicitacao.motivo, "alerta");
+      this.enviando = true;
+      const { ok, conteudo } = await chamarApi("POST", `${caminhoHabilitacao}/alteracoes-categoria`, {
+        categoria_desejada: this.categoriaDesejada,
+      });
+      this.enviando = false;
+      await this.recarregar();
+      if (!ok) {
+        avisar("Pedido não validado", conteudo.erro, "erro");
+        return;
       }
+      const solicitacao = conteudo.dados.solicitacao;
+      const pedidoAceito = solicitacao.resultado === "aceita";
+      avisar(
+        `Pedido ${this.rotulosResultado[solicitacao.resultado]}`,
+        solicitacao.motivo || conteudo.mensagem,
+        pedidoAceito ? "sucesso" : "alerta"
+      );
     },
   };
 }
