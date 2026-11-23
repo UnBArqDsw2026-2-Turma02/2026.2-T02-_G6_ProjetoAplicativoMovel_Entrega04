@@ -1,39 +1,36 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Entrar · {{ nome_aplicativo }}</title>
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11/dist/index.global.js"></script>
+  {% include "componentes/_cabeca.html" %}
 </head>
-<body class="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-800 to-blue-700 text-slate-800 antialiased">
-  <main class="flex min-h-screen items-center justify-center px-4 py-10">
+<body class="min-h-screen bg-gradient-to-br from-blue-950 via-blue-800 to-blue-600 text-slate-800 antialiased">
+  <div class="pointer-events-none fixed -top-24 -left-24 size-96 rotate-12 bg-yellow-400/20"></div>
+  <div class="pointer-events-none fixed -right-24 -bottom-24 size-96 -rotate-12 bg-emerald-400/20"></div>
+  <main class="relative flex min-h-screen items-center justify-center px-4 py-10">
     <div class="w-full max-w-md">
       <div class="mb-8 text-center text-white">
-        <span class="mx-auto mb-4 grid size-16 place-items-center rounded-2xl bg-white/15 shadow-lg">{{ icone("veiculo", "size-9") }}</span>
-        <h1 class="text-3xl font-bold tracking-tight">{{ nome_aplicativo }}</h1>
-        <p class="mt-2 text-blue-100">Seus serviços de veículo e trânsito em um só lugar.</p>
+        <span class="mx-auto mb-4 grid size-16 place-items-center rounded-md bg-yellow-400 text-blue-950 shadow-2xl shadow-yellow-900/40">{{ icone("veiculo", "size-9") }}</span>
+        <h1 class="text-3xl font-extrabold tracking-tight">{{ nome_aplicativo }}</h1>
+        <p class="mt-2 text-blue-100">Seus serviços de veículo, habilitação e trânsito em um só lugar.</p>
       </div>
 
-      <section class="rounded-3xl bg-white p-8 shadow-2xl">
-        <h2 class="text-lg font-semibold">Acesse sua conta</h2>
-        <p class="mt-1 text-sm text-slate-500">Use sua conta gov.br para consultar veículos, emitir o CRLV-e e acompanhar infrações.</p>
+      <section class="cartao border-t-8 border-yellow-400 p-8 shadow-2xl">
+        {{ ui.titulo_cartao("Acesse sua conta", "Use sua conta gov.br para consultar veículos, emitir o CRLV-e e acompanhar infrações.") }}
 
         <form method="post" action="/entrar/gov" class="mt-6">
-          <button type="submit" class="flex w-full items-center justify-center gap-3 rounded-full bg-blue-700 px-6 py-3.5 font-semibold text-white shadow-md transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300">
-            Entrar com <span class="rounded-md bg-white px-2 py-0.5 text-sm font-extrabold text-blue-800">gov.br</span>
+          <button type="submit" class="botao botao-primario w-full py-4 text-base">
+            Entrar com <span class="rounded-sm bg-white px-2 py-0.5 text-sm font-extrabold text-blue-800">gov.br</span>
           </button>
         </form>
 
         <ul class="mt-6 space-y-2 text-sm text-slate-600">
           <li class="flex items-center gap-2">{{ icone("escudo", "size-5 text-emerald-600") }} Consulta de débitos e emissão do CRLV-e</li>
-          <li class="flex items-center gap-2">{{ icone("transferencia", "size-5 text-emerald-600") }} Elegibilidade para transferência eletrônica</li>
-          <li class="flex items-center gap-2">{{ icone("alerta", "size-5 text-emerald-600") }} Infrações com descontos do SNE</li>
+          <li class="flex items-center gap-2">{{ icone("habilitacao", "size-5 text-emerald-600") }} Situação da habilitação e troca de categoria</li>
+          <li class="flex items-center gap-2">{{ icone("boleto", "size-5 text-emerald-600") }} Infrações, boletos e descontos do SNE</li>
         </ul>
 
-        <p class="mt-6 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
-          Ambiente de demonstração acadêmica: o login gov.br é simulado e nenhum dado real é solicitado ou enviado.
-        </p>
+        <div class="mt-6">{{ ui.dica("Ambiente de demonstração acadêmica: o login gov.br é simulado e nenhum dado real é solicitado ou enviado.") }}</div>
       </section>
     </div>
   </main>

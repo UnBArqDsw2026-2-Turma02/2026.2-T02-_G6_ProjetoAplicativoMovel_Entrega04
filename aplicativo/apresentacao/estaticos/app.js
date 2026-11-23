@@ -43,28 +43,49 @@ function formatarMoeda(valor) {
   return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+async function copiarTexto(texto, mensagemSucesso) {
+  try {
+    await navigator.clipboard.writeText(texto);
+    avisar("Copiado", mensagemSucesso, "sucesso");
+  } catch {
+    avisar("Não foi possível copiar", "Selecione o texto e copie manualmente.", "erro");
+  }
+}
+
+function comEnvio() {
+  return {
+    enviando: false,
+    async enviarParaApi(metodo, caminho, corpo, { tituloSucesso, tituloErro, tipoSucesso = "sucesso" }) {
+      this.enviando = true;
+      const resposta = await chamarApi(metodo, caminho, corpo);
+      this.enviando = false;
+      if (resposta.ok) {
+        avisar(tituloSucesso, resposta.conteudo.mensagem, tipoSucesso);
+      } else {
+        avisar(tituloErro, resposta.conteudo.erro, "erro");
+      }
+      return resposta;
+    },
+  };
+}
+
 function formularioEndereco(unidadeFederativa, placa) {
   return {
+    ...comEnvio(),
     ufDestino: "DF",
     cep: "",
     logradouro: "",
     caixaPostal: false,
-    enviando: false,
     enderecoAtualizado: null,
     async enviar() {
-      this.enviando = true;
-      const { ok, conteudo } = await chamarApi("PUT", `/api/v1/ufs/${unidadeFederativa}/veiculos/${placa}/endereco`, {
-        uf: this.ufDestino,
-        cep: this.cep,
-        logradouro: this.logradouro,
-        caixa_postal: this.caixaPostal,
-      });
-      this.enviando = false;
+      const { ok, conteudo } = await this.enviarParaApi(
+        "PUT",
+        `/api/v1/ufs/${unidadeFederativa}/veiculos/${placa}/endereco`,
+        { uf: this.ufDestino, cep: this.cep, logradouro: this.logradouro, caixa_postal: this.caixaPostal },
+        { tituloSucesso: "Endereço atualizado", tituloErro: "Alteração não permitida" }
+      );
       if (ok) {
         this.enderecoAtualizado = conteudo.dados.endereco;
-        avisar("Endereço atualizado", conteudo.mensagem, "sucesso");
-      } else {
-        avisar("Alteração não permitida", conteudo.erro, "erro");
       }
     },
   };
@@ -72,29 +93,20 @@ function formularioEndereco(unidadeFederativa, placa) {
 
 function emissaoCrlve(unidadeFederativa, placa, exercicioPadrao) {
   return {
+    ...comEnvio(),
     exercicio: exercicioPadrao,
-    emitindo: false,
     documento: null,
     pendencias: [],
     estadoPrototipo: null,
-    async iniciar() {
-      await this.carregarPrototipo();
-    },
     async emitir() {
-      this.emitindo = true;
-      const { ok, conteudo } = await chamarApi("POST", `/api/v1/ufs/${unidadeFederativa}/veiculos/${placa}/crlve`, {
-        exercicio: Number(this.exercicio),
-      });
-      this.emitindo = false;
-      if (ok) {
-        this.documento = conteudo.dados.documento;
-        this.pendencias = [];
-        avisar("CRLV-e emitido", conteudo.mensagem, "sucesso");
-      } else {
-        this.documento = null;
-        this.pendencias = (conteudo.dados && conteudo.dados.pendencias) || [];
-        avisar("Emissão bloqueada", conteudo.erro, "erro");
-      }
+      const { ok, conteudo } = await this.enviarParaApi(
+        "POST",
+        `/api/v1/ufs/${unidadeFederativa}/veiculos/${placa}/crlve`,
+        { exercicio: Number(this.exercicio) },
+        { tituloSucesso: "CRLV-e emitido", tituloErro: "Emissão bloqueada" }
+      );
+      this.documento = ok ? conteudo.dados.documento : null;
+      this.pendencias = ok ? [] : (conteudo.dados && conteudo.dados.pendencias) || [];
       await this.carregarPrototipo();
     },
     async carregarPrototipo() {
@@ -108,18 +120,18 @@ function emissaoCrlve(unidadeFederativa, placa, exercicioPadrao) {
 
 function verificacaoTei(unidadeFederativa, placa) {
   return {
+    ...comEnvio(),
     cpfComprador: "",
-    verificando: false,
     resultado: null,
     mensagem: "",
     async verificar() {
-      this.verificando = true;
+      this.enviando = true;
       const { ok, conteudo } = await chamarApi(
         "POST",
         `/api/v1/ufs/${unidadeFederativa}/veiculos/${placa}/elegibilidade-tei`,
         { cpf_comprador: this.cpfComprador }
       );
-      this.verificando = false;
+      this.enviando = false;
       if (!ok) {
         avisar("Verificação não realizada", conteudo.erro, "erro");
         return;
@@ -132,34 +144,79 @@ function verificacaoTei(unidadeFederativa, placa) {
   };
 }
 
-function solicitacaoDesconto(identificadorInfracao, infracaoInicial) {
+function painelInfracao(infracaoInicial) {
+  const caminhoInfracao = `/api/v1/cidadao/infracoes/${infracaoInicial.identificador}`;
   return {
+    ...comEnvio(),
     infracao: infracaoInicial,
     percentualEscolhido: null,
     termoAceito: false,
-    enviando: false,
-    get exigeTermo() {
-      return this.percentualEscolhido === 40;
-    },
-    async solicitar() {
-      this.enviando = true;
-      const { ok, conteudo } = await chamarApi("POST", `/api/v1/cidadao/infracoes/${identificadorInfracao}/descontos`, {
-        percentual: this.percentualEscolhido,
-        termo_aceito: this.termoAceito,
-      });
-      this.enviando = false;
+    cpfCondutor: "",
+    cnhCondutor: "",
+    declaracaoAceita: false,
+    async recarregar() {
+      const { ok, conteudo } = await chamarApi("GET", caminhoInfracao);
       if (ok) {
-        this.infracao = conteudo.dados.infracao;
-        avisar("Desconto aplicado", conteudo.mensagem, "sucesso");
-      } else {
-        avisar("Desconto não aplicado", conteudo.erro, "erro");
+        this.infracao = conteudo;
       }
+    },
+    async solicitarDesconto() {
+      const { ok } = await this.enviarParaApi(
+        "POST",
+        `${caminhoInfracao}/descontos`,
+        { percentual: this.percentualEscolhido, termo_aceito: this.termoAceito },
+        { tituloSucesso: "Desconto aplicado", tituloErro: "Desconto não aplicado" }
+      );
+      if (ok) {
+        await this.recarregar();
+      }
+    },
+    async gerarBoleto() {
+      const { ok } = await this.enviarParaApi("POST", `${caminhoInfracao}/boleto`, undefined, {
+        tituloSucesso: "Boleto",
+        tituloErro: "Boleto não gerado",
+      });
+      if (ok) {
+        await this.recarregar();
+      }
+    },
+    async indicarCondutor() {
+      const { ok } = await this.enviarParaApi(
+        "POST",
+        `${caminhoInfracao}/indicacao-condutor`,
+        { cpf_condutor: this.cpfCondutor, numero_cnh_condutor: this.cnhCondutor, declaracao_aceita: this.declaracaoAceita },
+        { tituloSucesso: "Indicação enviada", tituloErro: "Indicação não enviada" }
+      );
+      if (ok) {
+        await this.recarregar();
+      }
+    },
+  };
+}
+
+function acoesDocumento(nomeArquivo) {
+  return {
+    imprimir() {
+      window.print();
+    },
+    async compartilhar() {
+      const dadosCompartilhamento = { title: nomeArquivo, url: window.location.href };
+      if (navigator.share) {
+        try {
+          await navigator.share(dadosCompartilhamento);
+        } catch {
+          return;
+        }
+        return;
+      }
+      await copiarTexto(window.location.href, "Link do boleto copiado para compartilhar.");
     },
   };
 }
 
 function adesaoSne(aderiuInicialmente) {
   return {
+    ...comEnvio(),
     aderiu: aderiuInicialmente,
     tipoDocumento: "cnh",
     numeroCnh: "",
@@ -167,25 +224,79 @@ function adesaoSne(aderiuInicialmente) {
     placa: "",
     renavam: "",
     numeroSegurancaCrv: "",
-    enviando: false,
     protocolo: "",
     async aderir() {
-      this.enviando = true;
-      const { ok, conteudo } = await chamarApi("POST", "/api/v1/cidadao/sne/adesao", {
-        tipo_documento: this.tipoDocumento,
-        numero_cnh: this.numeroCnh,
-        codigo_seguranca_cnh: this.codigoSegurancaCnh,
-        placa: this.placa,
-        renavam: this.renavam,
-        numero_seguranca_crv: this.numeroSegurancaCrv,
-      });
-      this.enviando = false;
+      const { ok, conteudo } = await this.enviarParaApi(
+        "POST",
+        "/api/v1/cidadao/sne/adesao",
+        {
+          tipo_documento: this.tipoDocumento,
+          numero_cnh: this.numeroCnh,
+          codigo_seguranca_cnh: this.codigoSegurancaCnh,
+          placa: this.placa,
+          renavam: this.renavam,
+          numero_seguranca_crv: this.numeroSegurancaCrv,
+        },
+        { tituloSucesso: "Adesão confirmada", tituloErro: "Adesão não realizada" }
+      );
       if (ok) {
         this.aderiu = true;
         this.protocolo = conteudo.dados.adesao.protocolo;
-        avisar("Adesão confirmada", conteudo.mensagem, "sucesso");
-      } else {
-        avisar("Adesão não realizada", conteudo.erro, "erro");
+      }
+    },
+  };
+}
+
+function painelHabilitacao(estadoInicial) {
+  const caminhoHabilitacao = "/api/v1/cidadao/habilitacao";
+  return {
+    ...comEnvio(),
+    estado: estadoInicial,
+    categoriaDesejada: "",
+    gravidadeSimulada: "leve",
+    rotulosResultado: {
+      aceita: "aceita",
+      recusada: "recusada",
+      encaminhada_ao_detran: "encaminhada ao Detran",
+    },
+    async recarregar() {
+      const { ok, conteudo } = await chamarApi("GET", caminhoHabilitacao);
+      if (ok) {
+        this.estado = conteudo;
+      }
+    },
+    async executar(caminho, corpo, titulos) {
+      const resposta = await this.enviarParaApi("POST", `${caminhoHabilitacao}${caminho}`, corpo, titulos);
+      await this.recarregar();
+      return resposta;
+    },
+    concluirPeriodo() {
+      return this.executar("/conclusao-ppd", undefined, {
+        tituloSucesso: "Situação atualizada",
+        tituloErro: "Período não concluído",
+      });
+    },
+    iniciarNovaHabilitacao() {
+      return this.executar("/reinicio", undefined, {
+        tituloSucesso: "Nova PPD",
+        tituloErro: "Não foi possível reiniciar",
+      });
+    },
+    registrarInfracao() {
+      return this.executar(
+        "/infracoes",
+        { gravidade: this.gravidadeSimulada },
+        { tituloSucesso: "Histórico atualizado", tituloErro: "Infração não registrada", tipoSucesso: "alerta" }
+      );
+    },
+    async solicitarCategoria() {
+      const { ok, conteudo } = await this.executar(
+        "/alteracoes-categoria",
+        { categoria_desejada: this.categoriaDesejada },
+        { tituloSucesso: "Pedido validado", tituloErro: "Pedido não validado", tipoSucesso: "informacao" }
+      );
+      if (ok && conteudo.dados.solicitacao.resultado !== "aceita") {
+        avisar("Resultado", conteudo.dados.solicitacao.motivo, "alerta");
       }
     },
   };

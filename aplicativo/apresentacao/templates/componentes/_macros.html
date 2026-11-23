@@ -1,0 +1,103 @@
+{% macro selo(texto, tom="azul") -%}
+<span class="selo selo-{{ tom }}">{{ texto }}</span>
+{%- endmacro %}
+
+{% macro cabecalho_pagina(titulo, descricao="", nome_icone=None) -%}
+<section class="relative overflow-hidden rounded-md bg-gradient-to-br from-blue-900 via-blue-700 to-blue-600 p-6 text-white shadow-xl shadow-blue-900/30">
+  <div class="pointer-events-none absolute -top-16 -right-16 size-56 rotate-12 bg-yellow-400/15"></div>
+  <div class="pointer-events-none absolute -bottom-20 right-24 size-40 -rotate-12 bg-emerald-400/15"></div>
+  <div class="absolute inset-x-0 bottom-0 h-1.5 bg-gradient-to-r from-yellow-400 via-yellow-300 to-emerald-400"></div>
+  <div class="relative flex items-center gap-4">
+    {% if nome_icone %}
+    <span class="grid size-14 shrink-0 place-items-center rounded-md bg-yellow-400 text-blue-950 shadow-lg shadow-yellow-900/30">{{ icone(nome_icone, "size-8") }}</span>
+    {% endif %}
+    <div>
+      <h1 class="text-2xl font-extrabold tracking-tight">{{ titulo }}</h1>
+      {% if descricao %}<p class="mt-1 text-sm text-blue-100">{{ descricao }}</p>{% endif %}
+    </div>
+  </div>
+  {% if caller %}<div class="relative mt-5">{{ caller() }}</div>{% endif %}
+</section>
+{%- endmacro %}
+
+{% macro indicador(rotulo, valor, tom="azul", href=None) -%}
+{% set cores = {
+  "azul": "border-blue-600 text-blue-800",
+  "amarelo": "border-yellow-400 text-yellow-700",
+  "verde": "border-emerald-500 text-emerald-700",
+  "vermelho": "border-rose-500 text-rose-700",
+} %}
+{% set classes = "cartao block border-t-4 " ~ cores[tom] ~ (" cartao-interativo" if href else "") %}
+{% if href %}<a href="{{ href }}" class="{{ classes }}">{% else %}<div class="{{ classes }}">{% endif %}
+  <p class="text-xs font-semibold tracking-wide text-slate-500 uppercase">{{ rotulo }}</p>
+  <p class="mt-1 text-2xl font-extrabold">{{ valor }}</p>
+{% if href %}</a>{% else %}</div>{% endif %}
+{%- endmacro %}
+
+{% macro indicador_hero(rotulo, valor, href=None) -%}
+{% set classes = "block rounded-md bg-white/10 p-3 shadow-lg ring-1 ring-white/20 backdrop-blur transition duration-200 hover:scale-105 hover:bg-white/20" %}
+{% if href %}<a href="{{ href }}" class="{{ classes }}">{% else %}<div class="{{ classes }}">{% endif %}
+  <p class="text-xs font-semibold text-yellow-200">{{ rotulo }}</p>
+  <p class="text-2xl font-extrabold">{{ valor }}</p>
+{% if href %}</a>{% else %}</div>{% endif %}
+{%- endmacro %}
+
+{% macro atalho(href, nome_icone, titulo, descricao, tom="azul") -%}
+{% set cores = {
+  "azul": "bg-blue-700 text-white",
+  "amarelo": "bg-yellow-400 text-blue-950",
+  "verde": "bg-emerald-600 text-white",
+  "vermelho": "bg-rose-600 text-white",
+} %}
+<a href="{{ href }}" class="cartao cartao-interativo flex items-center gap-4">
+  <span class="grid size-12 shrink-0 place-items-center rounded-md shadow-md {{ cores[tom] }}">{{ icone(nome_icone, "size-6") }}</span>
+  <div class="min-w-0">
+    <p class="font-bold text-blue-950">{{ titulo }}</p>
+    <p class="text-sm text-slate-500">{{ descricao }}</p>
+  </div>
+  {{ icone("avancar", "ml-auto size-5 shrink-0 text-blue-400") }}
+</a>
+{%- endmacro %}
+
+{% macro link_voltar(href, texto) -%}
+<a href="{{ href }}" class="inline-flex items-center gap-2 text-sm font-bold text-blue-700 transition hover:-translate-x-1 hover:text-blue-900">{{ icone("voltar", "size-4") }} {{ texto }}</a>
+{%- endmacro %}
+
+{% macro placa(numero_placa, unidade_federativa="", grande=False) -%}
+<div class="overflow-hidden rounded-sm border-2 border-slate-900 text-center shadow-md">
+  <p class="bg-blue-800 px-3 text-[10px] font-bold tracking-widest text-white">BRASIL{% if unidade_federativa %} · {{ unidade_federativa }}{% endif %}</p>
+  <p class="bg-white px-3 font-mono font-bold {{ 'py-1 text-2xl tracking-[0.2em]' if grande else 'text-sm tracking-widest' }}">{{ numero_placa }}</p>
+</div>
+{%- endmacro %}
+
+{% macro vazio(nome_icone, texto) -%}
+<div class="grid h-full min-h-48 place-items-center rounded-md border-2 border-dashed border-blue-200 bg-white/60 p-6 text-center text-slate-400">
+  <div>{{ icone(nome_icone, "mx-auto size-10 text-blue-300") }}<p class="mt-2 text-sm font-medium">{{ texto }}</p></div>
+</div>
+{%- endmacro %}
+
+{% macro titulo_cartao(titulo, descricao="") -%}
+<h2 class="titulo-secao">{{ titulo }}</h2>
+{% if descricao %}<p class="mt-1 text-sm text-slate-500">{{ descricao }}</p>{% endif %}
+{%- endmacro %}
+
+{% macro campo(rotulo, modelo, tipo="text", placeholder="", atributos="", classes="") -%}
+<label class="rotulo {{ classes }}">{{ rotulo }}
+  <input type="{{ tipo }}" x-model="{{ modelo }}" placeholder="{{ placeholder }}" class="campo" {{ atributos | safe }}>
+</label>
+{%- endmacro %}
+
+{% macro botao_envio(texto, texto_carregando, nome_icone=None, tom="primario", estado="enviando", classes="w-full", condicao_desabilitado="") -%}
+<button type="submit" :disabled="{{ estado }}{% if condicao_desabilitado %} || {{ condicao_desabilitado }}{% endif %}" class="botao botao-{{ tom }} {{ classes }}">
+  {% if nome_icone %}{{ icone(nome_icone) }}{% endif %}
+  <span x-text="{{ estado }} ? '{{ texto_carregando }}' : '{{ texto }}'"></span>
+</button>
+{%- endmacro %}
+
+{% macro dado(rotulo, valor, classes="") -%}
+<div class="{{ classes }}"><dt class="text-xs font-semibold tracking-wide text-slate-400 uppercase">{{ rotulo }}</dt><dd class="mt-0.5 font-bold text-slate-800">{{ valor }}</dd></div>
+{%- endmacro %}
+
+{% macro dica(texto) -%}
+<p class="rounded-sm border-l-4 border-yellow-400 bg-yellow-50 px-3 py-2 text-xs text-yellow-900">{{ texto }}</p>
+{%- endmacro %}

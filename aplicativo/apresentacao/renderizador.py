@@ -15,6 +15,7 @@ def formatar_moeda(valor: float) -> str:
 modelos_html = Jinja2Templates(directory=str(PASTA_TEMPLATES))
 modelos_html.env.filters["moeda"] = formatar_moeda
 modelos_html.env.globals["icone"] = renderizar_icone
+modelos_html.env.globals["ui"] = modelos_html.env.get_template("componentes/_macros.html").module
 
 
 def renderizar_pagina(

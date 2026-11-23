@@ -104,13 +104,23 @@ def exibir_infracao(
     return renderizar_pagina(requisicao, "infracao.html", cidadao, contexto)
 
 
+@roteador_paginas.get("/infracoes/{identificador}/boleto", response_class=HTMLResponse)
+def exibir_boleto(
+    requisicao: Request, identificador: str, cidadao: CidadaoAtual, conteiner: ConteinerDependencia
+) -> HTMLResponse:
+    infracao = conteiner.infracoes_facade.detalhar_infracao(cidadao, identificador)
+    if infracao["boleto"] is None:
+        raise RecursoNaoEncontrado("Gere o boleto na tela da infração antes de abri-lo.")
+    return renderizar_pagina(requisicao, "boleto.html", cidadao, {"infracao": infracao, "boleto": infracao["boleto"]})
+
+
+@roteador_paginas.get("/habilitacao", response_class=HTMLResponse)
+def exibir_habilitacao(requisicao: Request, cidadao: CidadaoAtual, conteiner: ConteinerDependencia) -> HTMLResponse:
+    contexto = {"habilitacao": conteiner.servicos_habilitacao.descrever(cidadao)}
+    return renderizar_pagina(requisicao, "habilitacao.html", cidadao, contexto)
+
+
 @roteador_paginas.get("/sne", response_class=HTMLResponse)
 def exibir_sne(requisicao: Request, cidadao: CidadaoAtual, conteiner: ConteinerDependencia) -> HTMLResponse:
     contexto = {"situacao_sne": conteiner.sne_facade.consultar_situacao(cidadao)}
     return renderizar_pagina(requisicao, "sne.html", cidadao, contexto)
-
-
-@roteador_paginas.get("/arquitetura", response_class=HTMLResponse)
-def exibir_arquitetura(requisicao: Request, cidadao: CidadaoAtual, conteiner: ConteinerDependencia) -> HTMLResponse:
-    contexto = {"estado_prototipo": conteiner.servicos_veiculos.descrever_estado_prototipo(cidadao)}
-    return renderizar_pagina(requisicao, "arquitetura.html", cidadao, contexto)

@@ -1,55 +1,103 @@
 {% extends "base.html" %}
 {% block titulo %}Infração {{ infracao.identificador }}{% endblock %}
 {% block conteudo %}
-<a href="/infracoes" class="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-800">{{ icone("voltar", "size-4") }} Infrações</a>
+{{ ui.link_voltar("/infracoes", "Infrações") }}
 
-<div class="mt-3 grid gap-6 lg:grid-cols-5" x-data='solicitacaoDesconto("{{ infracao.identificador }}", {{ infracao | tojson }})'>
-  <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
+<div class="mt-3 grid gap-6 lg:grid-cols-5" x-data='painelInfracao({{ infracao | tojson }})'>
+  <section class="cartao border-t-4 border-blue-700 lg:col-span-3">
     <p class="font-mono text-xs text-slate-400">{{ infracao.identificador }} · enquadramento {{ infracao.codigo_enquadramento }}</p>
-    <h1 class="mt-1 text-xl font-bold">{{ infracao.descricao }}</h1>
+    <h1 class="mt-1 text-xl font-extrabold text-blue-950">{{ infracao.descricao }}</h1>
     <dl class="mt-5 grid grid-cols-2 gap-4 text-sm">
-      <div><dt class="text-slate-400">Placa</dt><dd class="font-semibold">{{ infracao.placa }}</dd></div>
-      <div><dt class="text-slate-400">Data</dt><dd class="font-semibold">{{ infracao.data_cometimento }}</dd></div>
-      <div class="col-span-2"><dt class="text-slate-400">Local</dt><dd class="font-semibold">{{ infracao.local }}</dd></div>
-      <div><dt class="text-slate-400">Órgão autuador</dt><dd class="font-semibold">{{ infracao.orgao_autuador }}</dd></div>
-      <div><dt class="text-slate-400">Vencimento</dt><dd class="font-semibold">{{ infracao.vencimento }}</dd></div>
-      <div><dt class="text-slate-400">Valor original</dt><dd class="font-semibold">{{ infracao.valor_original | moeda }}</dd></div>
-      <div><dt class="text-slate-400">Valor a pagar</dt><dd class="text-lg font-bold text-blue-800" x-text="formatarMoeda(infracao.valor_a_pagar)"></dd></div>
+      {{ ui.dado("Placa", infracao.placa) }}
+      {{ ui.dado("Data", infracao.data_cometimento) }}
+      {{ ui.dado("Local", infracao.local, "col-span-2") }}
+      {{ ui.dado("Órgão autuador", infracao.orgao_autuador) }}
+      {{ ui.dado("Vencimento", infracao.vencimento) }}
+      {{ ui.dado("Valor original", infracao.valor_original | moeda) }}
+      <div><dt class="text-xs font-semibold tracking-wide text-slate-400 uppercase">Valor a pagar</dt><dd class="mt-0.5 text-xl font-extrabold text-blue-800" x-text="formatarMoeda(infracao.valor_a_pagar)"></dd></div>
     </dl>
-    <p class="mt-5 rounded-xl bg-slate-50 p-3 text-xs text-slate-500">Política de desconto (Strategy): <strong>{{ infracao.politica_desconto }}</strong></p>
+    <p class="mt-5 rounded-sm border-l-4 border-blue-600 bg-blue-50 p-3 text-xs text-blue-900">Política de desconto (Strategy): <strong>{{ infracao.politica_desconto }}</strong></p>
   </section>
 
-  <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-2">
-    <h2 class="text-lg font-semibold">Desconto</h2>
+  <section class="cartao border-t-4 border-emerald-500 lg:col-span-2">
+    {{ ui.titulo_cartao("Desconto") }}
     <template x-if="infracao.percentual_desconto_aplicado">
-      <p class="mt-2 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800" x-text="`Desconto de ${infracao.percentual_desconto_aplicado}% aplicado.`"></p>
+      <p class="mt-2 rounded-sm border-l-4 border-emerald-500 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800" x-text="`Desconto de ${infracao.percentual_desconto_aplicado}% aplicado.`"></p>
     </template>
     <template x-if="!infracao.opcoes_desconto.length">
       <p class="mt-2 text-sm text-slate-500">Esta infração não possui desconto disponível.</p>
     </template>
-    <form class="mt-4 space-y-3" x-show="infracao.opcoes_desconto.length && !infracao.percentual_desconto_aplicado" @submit.prevent="solicitar()">
+    <form class="mt-4 space-y-3" x-show="infracao.opcoes_desconto.length && !infracao.percentual_desconto_aplicado" @submit.prevent="solicitarDesconto()">
       <template x-for="opcao in infracao.opcoes_desconto" :key="opcao.percentual">
-        <label class="flex cursor-pointer items-center justify-between gap-3 rounded-xl border p-4 transition"
-               :class="percentualEscolhido === opcao.percentual ? 'border-blue-600 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'">
+        <label class="opcao-selecionavel" :class="percentualEscolhido === opcao.percentual ? 'border-blue-600 bg-blue-50 shadow-lg' : 'border-slate-200 bg-white'">
           <span class="flex items-center gap-3">
-            <input type="radio" name="percentual" :value="opcao.percentual" x-model.number="percentualEscolhido" :disabled="!opcao.liberado" class="size-4">
+            <input type="radio" name="percentual" :value="opcao.percentual" x-model.number="percentualEscolhido" :disabled="!opcao.liberado" class="size-4 accent-blue-700">
             <span>
-              <span class="block font-semibold" x-text="`${opcao.percentual}% de desconto`"></span>
+              <span class="block font-extrabold text-blue-950" x-text="`${opcao.percentual}% de desconto`"></span>
               <span class="block text-xs text-slate-500" x-text="opcao.exige_sne ? (opcao.liberado ? 'Exclusivo para quem aderiu ao SNE' : 'Requer adesão ao SNE') : 'Disponível'"></span>
             </span>
           </span>
-          <span class="font-bold" x-text="formatarMoeda(opcao.valor_final)"></span>
+          <span class="font-extrabold text-emerald-700" x-text="formatarMoeda(opcao.valor_final)"></span>
         </label>
       </template>
-      <label class="flex items-start gap-2 text-sm" x-show="exigeTermo">
-        <input type="checkbox" x-model="termoAceito" class="mt-0.5 size-4"> Reconheço a infração e desisto de apresentar defesa ou recurso.
+      <label class="flex items-start gap-2 text-sm" x-show="percentualEscolhido === 40">
+        <input type="checkbox" x-model="termoAceito" class="mt-0.5 size-4 accent-blue-700"> Reconheço a infração e desisto de apresentar defesa ou recurso.
       </label>
-      <button type="submit" :disabled="enviando || !percentualEscolhido"
-              class="w-full rounded-xl bg-blue-700 px-4 py-3 font-semibold text-white shadow transition hover:bg-blue-800 disabled:opacity-50"
-              x-text="enviando ? 'Enviando...' : 'Aplicar desconto'"></button>
+      {{ ui.botao_envio("Aplicar desconto", "Enviando...", tom="sucesso", condicao_desabilitado="!percentualEscolhido") }}
       {% if not cidadao.aderiu_sne %}
-      <a href="/sne" class="block text-center text-sm font-medium text-indigo-700 hover:underline">Aderir ao SNE para liberar 40%</a>
+      <a href="/sne" class="block text-center text-sm font-bold text-blue-700 hover:underline">Aderir ao SNE para liberar 40%</a>
       {% endif %}
+    </form>
+  </section>
+
+  <section class="cartao border-t-4 border-yellow-400 lg:col-span-3">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      {{ ui.titulo_cartao("Boleto", "Gerado pela API de boletos por meio de um Adapter. Se você aplicar desconto depois, o boleto é atualizado.") }}
+    </div>
+    <template x-if="infracao.boleto">
+      <div class="mt-4 space-y-4">
+        <div class="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+          <div><p class="text-xs font-semibold text-slate-400 uppercase">Vencimento</p><p class="font-bold" x-text="infracao.boleto.vencimento"></p></div>
+          <div><p class="text-xs font-semibold text-slate-400 uppercase">Original</p><p class="font-bold" x-text="formatarMoeda(infracao.boleto.valor_original)"></p></div>
+          <div><p class="text-xs font-semibold text-slate-400 uppercase">Desconto</p><p class="font-bold text-emerald-700" x-text="formatarMoeda(infracao.boleto.valor_desconto)"></p></div>
+          <div><p class="text-xs font-semibold text-slate-400 uppercase">A pagar</p><p class="text-lg font-extrabold text-blue-800" x-text="formatarMoeda(infracao.boleto.valor_a_pagar)"></p></div>
+        </div>
+        <p class="rounded-sm bg-slate-100 p-3 font-mono text-xs break-all text-slate-700 shadow-inner" x-text="infracao.boleto.codigo_pagamento"></p>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" class="botao botao-destaque" @click="copiarTexto(infracao.boleto.codigo_pagamento, 'Código de pagamento copiado.')">{{ icone("copiar") }} Copiar código</button>
+          <a :href="`/infracoes/${infracao.identificador}/boleto`" class="botao botao-contorno">{{ icone("documento") }} Abrir boleto</a>
+        </div>
+      </div>
+    </template>
+    <template x-if="!infracao.boleto">
+      <div class="mt-4">
+        <template x-if="infracao.situacao === 'paga'"><p class="text-sm text-slate-500">Infração paga: não há boleto a gerar.</p></template>
+        <button type="button" x-show="infracao.situacao !== 'paga'" class="botao botao-destaque" :disabled="enviando" @click="gerarBoleto()">
+          {{ icone("boleto") }} <span x-text="enviando ? 'Gerando...' : 'Gerar boleto'"></span>
+        </button>
+      </div>
+    </template>
+  </section>
+
+  <section class="cartao border-t-4 border-blue-700 lg:col-span-2">
+    {{ ui.titulo_cartao("Indicar condutor", "Informe quem dirigia o veículo. O pedido é protocolado em um serviço legado por um Adapter.") }}
+    <template x-if="infracao.indicacao_condutor">
+      <div class="mt-4 rounded-sm border-l-4 border-emerald-500 bg-emerald-50 p-4 text-sm">
+        <p class="font-extrabold text-emerald-800" x-text="`Protocolo ${infracao.indicacao_condutor.protocolo}`"></p>
+        <p class="mt-1 text-slate-600" x-text="`Condutor ${infracao.indicacao_condutor.cpf_condutor_mascarado} · ${infracao.indicacao_condutor.situacao} em ${infracao.indicacao_condutor.data}`"></p>
+        <p class="mt-1 text-xs text-slate-500">O recebimento não significa que a indicação foi aprovada.</p>
+      </div>
+    </template>
+    <template x-if="!infracao.indicacao_condutor && infracao.situacao === 'paga'">
+      <p class="mt-4 text-sm text-slate-500">Infração paga: não é possível indicar condutor.</p>
+    </template>
+    <form class="mt-4 space-y-4" x-show="!infracao.indicacao_condutor && infracao.situacao !== 'paga'" @submit.prevent="indicarCondutor()">
+      {{ ui.campo("CPF do condutor", "cpfCondutor", placeholder="000.000.000-00", atributos='inputmode="numeric" required') }}
+      {{ ui.campo("Número da CNH do condutor", "cnhCondutor", placeholder="00000000000", atributos='inputmode="numeric" required') }}
+      <label class="flex items-start gap-2 text-sm">
+        <input type="checkbox" x-model="declaracaoAceita" class="mt-0.5 size-4 accent-blue-700"> Declaro que as informações são verdadeiras.
+      </label>
+      {{ ui.botao_envio("Enviar indicação", "Enviando...", "usuario", condicao_desabilitado="!declaracaoAceita") }}
     </form>
   </section>
 </div>

@@ -1,37 +1,34 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block titulo %}{{ nome_aplicativo }}{% endblock %} · {{ nome_aplicativo }}</title>
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11/dist/index.global.js"></script>
+  {% include "componentes/_cabeca.html" %}
   <script defer src="/estaticos/app.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
-  <style>[x-cloak] { display: none !important; }</style>
 </head>
-<body class="min-h-screen bg-slate-100 text-slate-800 antialiased">
+<body class="min-h-screen bg-gradient-to-b from-blue-50 via-slate-100 to-slate-100 text-slate-800 antialiased">
   {% set itens_navegacao = [
     ("/inicio", "inicio", "Início"),
+    ("/habilitacao", "habilitacao", "Habilitação"),
     ("/infracoes", "alerta", "Infrações"),
     ("/sne", "notificacao", "SNE"),
     ("/transferencias", "transferencia", "Transferências"),
-    ("/arquitetura", "arquitetura", "Arquitetura"),
   ] %}
 
-  <header class="sticky top-0 z-30 bg-gradient-to-r from-blue-800 to-indigo-700 text-white shadow">
+  <header class="sticky top-0 z-30 border-b-4 border-yellow-400 bg-gradient-to-r from-blue-900 via-blue-800 to-blue-700 text-white shadow-xl shadow-blue-900/30 print:hidden">
     <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-      <a href="/inicio" class="flex items-center gap-2 font-semibold tracking-tight">
-        <span class="grid size-9 place-items-center rounded-xl bg-white/15">{{ icone("veiculo", "size-6") }}</span>
+      <a href="/inicio" class="group flex items-center gap-3 font-extrabold tracking-tight">
+        <span class="grid size-10 place-items-center rounded-md bg-yellow-400 text-blue-950 shadow-lg transition duration-200 group-hover:scale-110 group-hover:rotate-3">{{ icone("veiculo", "size-6") }}</span>
         <span class="text-lg">{{ nome_aplicativo }}</span>
       </a>
       {% if cidadao %}
       <div class="flex items-center gap-3">
         <div class="hidden text-right text-sm sm:block">
-          <p class="font-medium">Olá, {{ cidadao.primeiro_nome }}</p>
-          <p class="text-xs text-blue-100">CPF {{ cidadao.cpf_mascarado }}</p>
+          <p class="font-bold">Olá, {{ cidadao.primeiro_nome }}</p>
+          <p class="text-xs text-blue-200">CPF {{ cidadao.cpf_mascarado }}</p>
         </div>
         <form method="post" action="/sair">
-          <button type="submit" class="grid size-9 place-items-center rounded-xl bg-white/10 transition hover:bg-white/25" title="Sair" aria-label="Sair">
+          <button type="submit" class="grid size-10 place-items-center rounded-md bg-white/10 shadow-md ring-1 ring-white/20 transition duration-200 hover:scale-110 hover:bg-yellow-400 hover:text-blue-950" title="Sair" aria-label="Sair">
             {{ icone("sair") }}
           </button>
         </form>
@@ -40,17 +37,14 @@
     </div>
   </header>
 
-  <div class="mx-auto flex max-w-6xl gap-6 px-4 pb-28 pt-6 md:pb-10">
-    <nav class="sticky top-24 hidden h-fit w-56 shrink-0 flex-col gap-1 rounded-2xl bg-white p-3 shadow-sm md:flex" aria-label="Navegação principal">
+  <div class="mx-auto flex max-w-6xl gap-6 px-4 pt-6 pb-28 md:pb-10">
+    <nav class="sticky top-24 hidden h-fit w-56 shrink-0 flex-col gap-1.5 rounded-md bg-white p-3 shadow-xl shadow-blue-950/10 ring-1 ring-slate-200 md:flex print:hidden" aria-label="Navegação principal">
       {% for caminho, nome_icone, rotulo in itens_navegacao %}
       {% set ativo = caminho_atual.startswith(caminho) or (caminho == "/inicio" and caminho_atual.startswith("/veiculos")) %}
-      <a href="{{ caminho }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition {{ 'bg-blue-50 text-blue-800' if ativo else 'text-slate-600 hover:bg-slate-50' }}">
+      <a href="{{ caminho }}" class="flex items-center gap-3 rounded-md border-l-4 px-3 py-2.5 text-sm font-bold transition duration-200 hover:scale-105 {{ 'border-yellow-400 bg-blue-700 text-white shadow-lg shadow-blue-900/30' if ativo else 'border-transparent text-slate-600 hover:bg-blue-50 hover:text-blue-800 hover:shadow-md' }}">
         {{ icone(nome_icone) }} {{ rotulo }}
       </a>
       {% endfor %}
-      <a href="/docs" class="mt-2 flex items-center gap-3 rounded-xl border border-dashed border-slate-200 px-3 py-2.5 text-sm text-slate-500 hover:bg-slate-50">
-        {{ icone("documento") }} API (Swagger)
-      </a>
     </nav>
 
     <main class="min-w-0 flex-1">
@@ -58,27 +52,27 @@
     </main>
   </div>
 
-  <nav class="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur md:hidden" aria-label="Navegação inferior">
+  <nav class="fixed inset-x-0 bottom-0 z-30 border-t-4 border-yellow-400 bg-blue-900 text-white shadow-2xl md:hidden print:hidden" aria-label="Navegação inferior">
     <div class="grid grid-cols-5">
       {% for caminho, nome_icone, rotulo in itens_navegacao %}
       {% set ativo = caminho_atual.startswith(caminho) or (caminho == "/inicio" and caminho_atual.startswith("/veiculos")) %}
-      <a href="{{ caminho }}" class="flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium {{ 'text-blue-700' if ativo else 'text-slate-500' }}">
+      <a href="{{ caminho }}" class="flex flex-col items-center gap-1 py-2.5 text-[11px] font-bold transition {{ 'bg-blue-700 text-yellow-300' if ativo else 'text-blue-100 hover:bg-blue-800' }}">
         {{ icone(nome_icone, "size-6") }} {{ rotulo }}
       </a>
       {% endfor %}
     </div>
   </nav>
 
-  <div x-data class="fixed inset-x-4 top-20 z-50 flex flex-col items-end gap-2 sm:left-auto sm:w-96" aria-live="polite">
+  <div x-data class="fixed inset-x-4 top-20 z-50 flex flex-col items-end gap-2 sm:left-auto sm:w-96 print:hidden" aria-live="polite">
     <template x-for="aviso in $store.avisos.lista" :key="aviso.identificador">
-      <div x-transition class="w-full rounded-xl border-l-4 bg-white p-4 shadow-lg"
-           :class="{ 'border-emerald-500': aviso.tipo === 'sucesso', 'border-rose-500': aviso.tipo === 'erro', 'border-amber-500': aviso.tipo === 'alerta', 'border-blue-500': aviso.tipo === 'informacao' }">
+      <div x-transition class="w-full rounded-md border-l-8 bg-white p-4 shadow-2xl shadow-blue-950/20 ring-1 ring-slate-200"
+           :class="{ 'border-emerald-500': aviso.tipo === 'sucesso', 'border-rose-500': aviso.tipo === 'erro', 'border-yellow-400': aviso.tipo === 'alerta', 'border-blue-600': aviso.tipo === 'informacao' }">
         <div class="flex items-start justify-between gap-3">
           <div>
-            <p class="text-sm font-semibold" x-text="aviso.titulo"></p>
+            <p class="text-sm font-extrabold text-blue-950" x-text="aviso.titulo"></p>
             <p class="mt-0.5 text-sm text-slate-600" x-text="aviso.mensagem"></p>
           </div>
-          <button type="button" class="text-slate-400 hover:text-slate-700" @click="$store.avisos.remover(aviso.identificador)" aria-label="Fechar aviso">&times;</button>
+          <button type="button" class="text-xl leading-none text-slate-400 hover:text-slate-700" @click="$store.avisos.remover(aviso.identificador)" aria-label="Fechar aviso">&times;</button>
         </div>
       </div>
     </template>

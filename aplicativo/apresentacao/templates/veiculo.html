@@ -4,50 +4,41 @@
 {% include "_cabecalho_veiculo.html" %}
 
 {% set nada_consta = consultas.nada_consta %}
-<section class="mt-6 flex items-center gap-4 rounded-2xl p-5 {{ 'bg-emerald-50 ring-1 ring-emerald-200' if nada_consta.limpo else 'bg-rose-50 ring-1 ring-rose-200' }}">
+<section class="mt-6 flex items-center gap-4 rounded-md border-l-8 p-5 shadow-lg {{ 'border-emerald-500 bg-emerald-50' if nada_consta.limpo else 'border-rose-500 bg-rose-50' }}">
   <span class="{{ 'text-emerald-600' if nada_consta.limpo else 'text-rose-600' }}">{{ icone("sucesso" if nada_consta.limpo else "falha", "size-10") }}</span>
   <div>
-    <h2 class="font-semibold">{{ "Nada consta: veículo sem pendências impeditivas" if nada_consta.limpo else "Existem pendências impeditivas" }}</h2>
+    <h2 class="font-extrabold text-blue-950">{{ "Nada consta: veículo sem pendências impeditivas" if nada_consta.limpo else "Existem pendências impeditivas" }}</h2>
     <p class="text-sm text-slate-600">
       {% if nada_consta.limpo %}O CRLV-e pode ser emitido e o endereço pode ser alterado.{% else %}Regularize os itens abaixo para emitir o CRLV-e.{% endif %}
     </p>
   </div>
 </section>
 
-<section class="mt-6 grid gap-4 md:grid-cols-3">
+<section class="mt-6 grid gap-5 md:grid-cols-3">
   {% for chave in ["debitos", "restricoes", "financiamentos"] %}
   {% set consulta = consultas[chave] %}
-  <article class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-    <div class="flex items-center justify-between">
-      <h3 class="font-semibold">{{ consulta.tipo }}</h3>
-      <span class="rounded-full px-2.5 py-0.5 text-xs font-medium {{ 'bg-emerald-100 text-emerald-700' if consulta.limpo else 'bg-amber-100 text-amber-700' }}">
-        {{ "Nada consta" if consulta.limpo else consulta.itens | length ~ " item(ns)" }}
-      </span>
+  <article class="cartao cartao-interativo cursor-default border-t-4 {{ 'border-emerald-500' if consulta.limpo else 'border-yellow-400' }}">
+    <div class="flex items-center justify-between gap-2">
+      <h3 class="font-extrabold text-blue-950">{{ consulta.tipo }}</h3>
+      {{ ui.selo("Nada consta" if consulta.limpo else consulta.itens | length ~ " item(ns)", "verde" if consulta.limpo else "amarelo") }}
     </div>
     {% if consulta.limpo %}
     <p class="mt-3 text-sm text-slate-500">Nenhum registro encontrado.</p>
     {% else %}
     <ul class="mt-3 space-y-2 text-sm">
-      {% for item in consulta.itens %}<li class="rounded-lg bg-slate-50 px-3 py-2">{{ item }}</li>{% endfor %}
+      {% for item in consulta.itens %}<li class="rounded-sm border-l-4 border-yellow-400 bg-yellow-50 px-3 py-2">{{ item }}</li>{% endfor %}
     </ul>
-    {% if consulta.valor_total %}<p class="mt-3 text-right text-sm font-semibold">Total {{ consulta.valor_total | moeda }}</p>{% endif %}
+    {% if consulta.valor_total %}<p class="mt-3 text-right text-sm font-extrabold text-blue-950">Total {{ consulta.valor_total | moeda }}</p>{% endif %}
     {% endif %}
   </article>
   {% endfor %}
 </section>
 
-<section class="mt-6 grid gap-4 sm:grid-cols-3">
-  <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-    <p class="text-xs uppercase tracking-wide text-slate-400">Licenciamento</p>
-    <p class="mt-1 font-semibold {{ 'text-emerald-700' if veiculo.licenciamento_em_dia else 'text-rose-700' }}">{{ "Em dia" if veiculo.licenciamento_em_dia else "Pendente" }}</p>
-  </div>
-  <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-    <p class="text-xs uppercase tracking-wide text-slate-400">Documento de transferência</p>
-    <p class="mt-1 font-semibold">{{ veiculo.documento_transferencia }}</p>
-  </div>
-  <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-    <p class="text-xs uppercase tracking-wide text-slate-400">Endereço cadastrado</p>
-    <p class="mt-1 font-semibold">{{ veiculo.endereco.logradouro }}</p>
+<section class="mt-6 grid gap-5 sm:grid-cols-3">
+  <div class="cartao">{{ ui.dado("Licenciamento", "Em dia" if veiculo.licenciamento_em_dia else "Pendente") }}</div>
+  <div class="cartao">{{ ui.dado("Documento de transferência", veiculo.documento_transferencia) }}</div>
+  <div class="cartao">
+    {{ ui.dado("Endereço cadastrado", veiculo.endereco.logradouro) }}
     <p class="text-sm text-slate-500">{{ veiculo.endereco.uf }} · CEP {{ veiculo.endereco.cep }}</p>
   </div>
 </section>

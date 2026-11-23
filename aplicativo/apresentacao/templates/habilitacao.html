@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block titulo %}Habilitação{% endblock %}
+{% block conteudo %}
+<div x-data='painelHabilitacao({{ habilitacao | tojson }})'>
+  {% call ui.cabecalho_pagina("Habilitação", "Situação da sua CNH, período da Permissão Para Dirigir e mudança de categoria.", "habilitacao") %}
+  <div class="grid gap-3 sm:grid-cols-4">
+    <div class="rounded-md bg-white/10 p-3 shadow-lg ring-1 ring-white/20 transition duration-200 hover:scale-105">
+      <p class="text-xs font-semibold text-yellow-200">Situação</p>
+      <p class="text-xl font-extrabold" x-text="estado.situacao"></p>
+    </div>
+    <div class="rounded-md bg-white/10 p-3 shadow-lg ring-1 ring-white/20 transition duration-200 hover:scale-105">
+      <p class="text-xs font-semibold text-yellow-200">Categoria</p>
+      <p class="text-xl font-extrabold" x-text="estado.categoria"></p>
+    </div>
+    <div class="rounded-md bg-white/10 p-3 shadow-lg ring-1 ring-white/20 transition duration-200 hover:scale-105">
+      <p class="text-xs font-semibold text-yellow-200">Pode dirigir</p>
+      <p class="text-xl font-extrabold" x-text="estado.pode_dirigir ? 'Sim' : 'Não'"></p>
+    </div>
+    <div class="rounded-md bg-white/10 p-3 shadow-lg ring-1 ring-white/20 transition duration-200 hover:scale-105">
+      <p class="text-xs font-semibold text-yellow-200">Registro</p>
+      <p class="font-mono text-lg font-extrabold" x-text="estado.numero_registro"></p>
+    </div>
+  </div>
+  {% endcall %}
+
+  <div class="mt-6 grid gap-6 lg:grid-cols-5">
+    <section class="cartao border-t-4 lg:col-span-3" :class="{ 'border-blue-700': estado.situacao === 'PPD Ativa', 'border-emerald-500': estado.situacao === 'Definitiva', 'border-rose-500': estado.situacao === 'Cassada' }">
+      {{ ui.titulo_cartao("Período da Permissão Para Dirigir", "Cada situação da habilitação é um estado (State). A própria PPD decide se vira Definitiva ou Cassada ao fim dos 12 meses.") }}
+      <ol class="mt-5 grid grid-cols-3 gap-2 text-center text-xs font-bold">
+        <template x-for="situacao in ['PPD Ativa', 'Definitiva', 'Cassada']" :key="situacao">
+          <li class="rounded-md px-2 py-3 shadow-md transition duration-200 hover:scale-105"
+              :class="estado.situacao === situacao ? (situacao === 'Cassada' ? 'bg-rose-600 text-white shadow-rose-900/30' : situacao === 'Definitiva' ? 'bg-emerald-600 text-white shadow-emerald-900/30' : 'bg-blue-700 text-white shadow-blue-900/30') : 'bg-slate-100 text-slate-400'"
+              x-text="situacao"></li>
+        </template>
+      </ol>
+      <dl class="mt-5 grid grid-cols-2 gap-4 text-sm">
+        <div><dt class="text-xs font-semibold text-slate-400 uppercase">Emissão da PPD</dt><dd class="font-bold" x-text="estado.data_emissao_ppd"></dd></div>
+        <div><dt class="text-xs font-semibold text-slate-400 uppercase">Fim do período</dt><dd class="font-bold" x-text="estado.data_limite_ppd"></dd></div>
+      </dl>
+      <template x-if="estado.bloqueios_ativos.length">
+        <p class="mt-4 rounded-sm border-l-4 border-rose-500 bg-rose-50 p-3 text-sm font-semibold text-rose-800" x-text="`Bloqueios ativos: ${estado.bloqueios_ativos.join(', ')}`"></p>
+      </template>
+      <div class="mt-5 flex flex-wrap gap-3">
+        <button type="button" class="botao botao-destaque" x-show="estado.situacao === 'PPD Ativa'" :disabled="enviando" @click="concluirPeriodo()">
+          {{ icone("sucesso") }} <span>Concluir período da PPD</span>
+        </button>
+        <button type="button" class="botao botao-primario" x-show="estado.situacao === 'Cassada'" :disabled="enviando" @click="iniciarNovaHabilitacao()">
+          {{ icone("habilitacao") }} <span>Iniciar nova 1ª habilitação</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="cartao border-t-4 border-yellow-400 lg:col-span-2">
+      {{ ui.titulo_cartao("Avisos recebidos", "Quando a situação muda, push, e-mail e auditoria são avisados (Observer).") }}
+      <ul class="mt-4 space-y-2">
+        <template x-for="(notificacao, indice) in estado.notificacoes" :key="indice">
+          <li class="rounded-md border-l-4 bg-white p-3 text-sm shadow-md ring-1 ring-slate-100 transition duration-200 hover:scale-[1.02] hover:shadow-lg" :class="notificacao.canal === 'Push' ? 'border-blue-600' : 'border-yellow-400'">
+            <div class="flex items-center justify-between gap-2">
+              <span class="selo" :class="notificacao.canal === 'Push' ? 'selo-azul' : 'selo-amarelo'" x-text="notificacao.canal"></span>
+              <span class="text-xs text-slate-400" x-text="notificacao.momento"></span>
+            </div>
+            <p class="mt-1 text-slate-700" x-text="notificacao.mensagem"></p>
+          </li>
+        </template>
+      </ul>
+      <template x-if="!estado.notificacoes.length">
+        <p class="mt-4 text-sm text-slate-500">Nenhum aviso ainda. Eles aparecem quando a situação da habilitação muda.</p>
+      </template>
+      <template x-if="estado.auditoria.length">
+        <details class="mt-4 text-xs text-slate-500">
+          <summary class="cursor-pointer font-bold text-blue-700">Registro de auditoria</summary>
+          <ul class="mt-2 space-y-1 font-mono">
+            <template x-for="(registro, indice) in estado.auditoria" :key="indice"><li x-text="`${registro.momento} · ${registro.descricao}`"></li></template>
+          </ul>
+        </details>
+      </template>
+    </section>
+
+    <section class="cartao border-t-4 border-emerald-500 lg:col-span-3">
+      {{ ui.titulo_cartao("Mudar de categoria", "O pedido passa por uma cadeia de validações (Chain of Responsibility): atendimento presencial, compatibilidade e bloqueios.") }}
+      <form class="mt-5 space-y-4" @submit.prevent="solicitarCategoria()">
+        <div class="grid grid-cols-4 gap-2 sm:grid-cols-7">
+          <template x-for="categoria in estado.categorias_existentes" :key="categoria">
+            <button type="button" @click="categoriaDesejada = categoria"
+                    class="rounded-md border-2 py-3 text-sm font-extrabold shadow-sm transition duration-200 hover:scale-110 hover:shadow-lg"
+                    :class="categoriaDesejada === categoria ? 'border-blue-700 bg-blue-700 text-white shadow-blue-900/30' : 'border-slate-200 bg-white text-blue-950'"
+                    x-text="categoria"></button>
+          </template>
+        </div>
+        <ol class="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-500">
+          <li class="rounded-sm bg-blue-100 px-2 py-1 text-blue-800">1. Detran (C, D e E presencial)</li>
+          <li aria-hidden="true">→</li>
+          <li class="rounded-sm bg-yellow-100 px-2 py-1 text-yellow-900">2. Compatibilidade</li>
+          <li aria-hidden="true">→</li>
+          <li class="rounded-sm bg-emerald-100 px-2 py-1 text-emerald-800">3. Bloqueios</li>
+        </ol>
+        {{ ui.botao_envio("Validar pedido", "Validando...", "escudo", tom="sucesso", condicao_desabilitado="!categoriaDesejada") }}
+      </form>
+      <ul class="mt-5 space-y-2">
+        <template x-for="(solicitacao, indice) in estado.solicitacoes_categoria" :key="indice">
+          <li class="rounded-md border-l-4 p-3 text-sm shadow-md transition duration-200 hover:scale-[1.02]"
+              :class="{ 'border-emerald-500 bg-emerald-50': solicitacao.resultado === 'aceita', 'border-rose-500 bg-rose-50': solicitacao.resultado === 'recusada', 'border-yellow-400 bg-yellow-50': solicitacao.resultado === 'encaminhada_ao_detran' }">
+            <p class="font-extrabold text-blue-950" x-text="`${solicitacao.categoria_atual} → ${solicitacao.categoria_desejada}: ${rotulosResultado[solicitacao.resultado]}`"></p>
+            <p class="text-slate-600" x-show="solicitacao.motivo" x-text="solicitacao.motivo"></p>
+          </li>
+        </template>
+      </ul>
+    </section>
+
+    <section class="cartao border-t-4 border-slate-400 lg:col-span-2">
+      {{ ui.titulo_cartao("Histórico da PPD", "Infrações consideradas ao fim do período: grave, gravíssima ou duas médias cassam a PPD.") }}
+      <ul class="mt-4 space-y-2 text-sm">
+        <template x-for="infracao in estado.historico_infracoes" :key="infracao.codigo">
+          <li class="flex items-center justify-between rounded-md bg-slate-50 px-3 py-2 shadow-sm">
+            <span class="font-mono" x-text="infracao.codigo"></span>
+            <span class="selo" :class="['grave', 'gravissima'].includes(infracao.gravidade) ? 'selo-vermelho' : infracao.gravidade === 'media' ? 'selo-amarelo' : 'selo-verde'" x-text="infracao.gravidade"></span>
+            <span class="text-xs text-slate-400" x-text="infracao.data"></span>
+          </li>
+        </template>
+      </ul>
+      <form class="mt-5 space-y-3 rounded-md border-2 border-dashed border-yellow-300 bg-yellow-50/60 p-4" x-show="estado.situacao !== 'Cassada'" @submit.prevent="registrarInfracao()">
+        <p class="text-xs font-bold tracking-wide text-yellow-900 uppercase">Simulação acadêmica</p>
+        <label class="rotulo">Registrar infração de gravidade
+          <select x-model="gravidadeSimulada" class="campo">
+            <template x-for="gravidade in estado.gravidades" :key="gravidade"><option :value="gravidade" x-text="gravidade"></option></template>
+          </select>
+        </label>
+        {{ ui.botao_envio("Registrar no histórico", "Registrando...", "alerta", tom="contorno") }}
+      </form>
+    </section>
+  </div>
+</div>
+{% endblock %}

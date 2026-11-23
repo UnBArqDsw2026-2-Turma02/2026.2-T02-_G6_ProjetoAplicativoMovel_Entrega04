@@ -1,26 +1,26 @@
 {% extends "base.html" %}
 {% block titulo %}Transferências{% endblock %}
 {% block conteudo %}
-<h1 class="text-2xl font-bold">Transferências realizadas</h1>
-<p class="mt-1 text-sm text-slate-500">Histórico somente de transferências concluídas em que você participou (UC06). Transferências em andamento não aparecem.</p>
+{{ ui.cabecalho_pagina("Transferências realizadas", "Histórico somente das transferências concluídas em que você participou (UC06). As que estão em andamento não aparecem.", "transferencia") }}
 
-<section class="mt-6 space-y-3">
+<section class="mt-6 space-y-4">
   {% for transferencia in transferencias %}
-  <article class="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+  {% set vendeu = transferencia.papel == "Vendedor" %}
+  <article class="cartao cartao-interativo flex cursor-default flex-wrap items-center justify-between gap-4 border-l-8 {{ 'border-yellow-400' if vendeu else 'border-emerald-500' }}">
     <div class="flex items-center gap-4">
-      <span class="grid size-12 place-items-center rounded-xl {{ 'bg-amber-50 text-amber-600' if transferencia.papel == 'Vendedor' else 'bg-emerald-50 text-emerald-600' }}">{{ icone("transferencia", "size-6") }}</span>
+      <span class="grid size-12 place-items-center rounded-md shadow-md {{ 'bg-yellow-400 text-blue-950' if vendeu else 'bg-emerald-600 text-white' }}">{{ icone("transferencia", "size-6") }}</span>
       <div>
-        <p class="font-semibold">{{ transferencia.marca_modelo }}</p>
+        <p class="font-extrabold text-blue-950">{{ transferencia.marca_modelo }}</p>
         <p class="text-sm text-slate-500">Placa {{ transferencia.placa }} · {{ transferencia.unidade_federativa }}</p>
       </div>
     </div>
     <div class="text-right">
-      <span class="rounded-full px-2.5 py-0.5 text-xs font-medium {{ 'bg-amber-100 text-amber-700' if transferencia.papel == 'Vendedor' else 'bg-emerald-100 text-emerald-700' }}">{{ transferencia.papel }}</span>
+      {{ ui.selo(transferencia.papel, "amarelo" if vendeu else "verde") }}
       <p class="mt-1 flex items-center justify-end gap-1 text-sm text-slate-500">{{ icone("relogio", "size-4") }} {{ transferencia.data }}</p>
     </div>
   </article>
   {% else %}
-  <p class="rounded-2xl bg-white p-6 text-center text-slate-500 shadow-sm">Nenhuma transferência concluída.</p>
+  {{ ui.vazio("transferencia", "Nenhuma transferência concluída.") }}
   {% endfor %}
 </section>
 {% endblock %}

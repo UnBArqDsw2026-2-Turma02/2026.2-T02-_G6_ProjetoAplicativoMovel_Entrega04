@@ -4,37 +4,22 @@
 {% set veiculos = base.veiculos %}
 {% set quantidade_com_pendencias = veiculos | selectattr("possui_pendencias_impeditivas") | list | length %}
 
-<section class="rounded-3xl bg-gradient-to-br from-blue-700 to-indigo-700 p-6 text-white shadow-lg">
-  <p class="text-sm text-blue-100">Bem-vinda(o) de volta</p>
-  <h1 class="mt-1 text-2xl font-bold">{{ cidadao.nome }}</h1>
-  <p class="mt-1 text-sm text-blue-100">Conta gov.br simulada · CPF {{ cidadao.cpf_mascarado }}</p>
-  <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-    <div class="rounded-2xl bg-white/10 p-3">
-      <p class="text-xs text-blue-100">Veículos em {{ base.unidade_federativa }}</p>
-      <p class="text-2xl font-bold">{{ veiculos | length }}</p>
-    </div>
-    <div class="rounded-2xl bg-white/10 p-3">
-      <p class="text-xs text-blue-100">Com pendências</p>
-      <p class="text-2xl font-bold">{{ quantidade_com_pendencias }}</p>
-    </div>
-    <a href="/infracoes" class="rounded-2xl bg-white/10 p-3 transition hover:bg-white/20">
-      <p class="text-xs text-blue-100">Infrações em aberto</p>
-      <p class="text-2xl font-bold">{{ resumo_infracoes.quantidade_em_aberto }}</p>
-    </a>
-    <a href="/sne" class="rounded-2xl bg-white/10 p-3 transition hover:bg-white/20">
-      <p class="text-xs text-blue-100">SNE</p>
-      <p class="text-lg font-bold">{{ "Aderido" if cidadao.aderiu_sne else "Não aderido" }}</p>
-    </a>
-  </div>
-</section>
+{% call ui.cabecalho_pagina(cidadao.nome, "Bem-vinda(o) de volta · conta gov.br simulada · CPF " ~ cidadao.cpf_mascarado, "usuario") %}
+<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+  {{ ui.indicador_hero("Veículos em " ~ base.unidade_federativa, veiculos | length) }}
+  {{ ui.indicador_hero("Com pendências", quantidade_com_pendencias) }}
+  {{ ui.indicador_hero("Infrações em aberto", resumo_infracoes.quantidade_em_aberto, "/infracoes") }}
+  {{ ui.indicador_hero("SNE", "Aderido" if cidadao.aderiu_sne else "Não aderido", "/sne") }}
+</div>
+{% endcall %}
 
 <section class="mt-8">
   <div class="flex flex-wrap items-center justify-between gap-3">
-    <h2 class="text-lg font-semibold">Meus veículos</h2>
-    <div class="inline-flex rounded-full bg-white p-1 shadow-sm" role="tablist" aria-label="Unidade federativa">
+    <h2 class="titulo-secao">Meus veículos</h2>
+    <div class="inline-flex gap-1 rounded-md bg-white p-1 shadow-lg ring-1 ring-slate-200" role="tablist" aria-label="Unidade federativa">
       {% for unidade_federativa in unidades_federativas %}
       <a href="/inicio?uf={{ unidade_federativa }}" role="tab"
-         class="rounded-full px-4 py-1.5 text-sm font-medium transition {{ 'bg-blue-700 text-white' if unidade_federativa == base.unidade_federativa else 'text-slate-600 hover:bg-slate-100' }}">
+         class="rounded-sm px-4 py-1.5 text-sm font-bold transition duration-200 hover:scale-105 {{ 'bg-blue-700 text-white shadow-md' if unidade_federativa == base.unidade_federativa else 'text-slate-600 hover:bg-yellow-100' }}">
         {{ unidade_federativa }}
       </a>
       {% endfor %}
@@ -42,47 +27,33 @@
   </div>
   <p class="mt-1 text-xs text-slate-500">Base única da UF {{ base.unidade_federativa }} (Multiton) · instância #{{ base.identificador_base }}</p>
 
-  <div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+  <div class="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
     {% for veiculo in veiculos %}
-    <a href="/veiculos/{{ base.unidade_federativa }}/{{ veiculo.placa }}" class="group flex flex-col rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md">
+    <a href="/veiculos/{{ base.unidade_federativa }}/{{ veiculo.placa }}" class="group cartao cartao-interativo flex flex-col border-t-4 {{ 'border-rose-500' if veiculo.possui_pendencias_impeditivas else 'border-emerald-500' }}">
       <div class="flex items-start justify-between gap-3">
         <div>
-          <p class="text-xs uppercase tracking-wide text-slate-400">{{ veiculo.ano_modelo }} · {{ veiculo.cor }}</p>
-          <p class="mt-1 font-semibold">{{ veiculo.marca_modelo }}</p>
+          <p class="text-xs font-semibold tracking-wide text-slate-400 uppercase">{{ veiculo.ano_modelo }} · {{ veiculo.cor }}</p>
+          <p class="mt-1 font-extrabold text-blue-950">{{ veiculo.marca_modelo }}</p>
         </div>
-        <span class="rounded-md border-2 border-slate-800 bg-white px-2 py-0.5 font-mono text-sm font-bold tracking-widest">{{ veiculo.placa }}</span>
+        {{ ui.placa(veiculo.placa) }}
       </div>
-      <div class="mt-4 flex flex-wrap gap-2 text-xs">
-        {% if veiculo.possui_pendencias_impeditivas %}
-        <span class="rounded-full bg-rose-100 px-2.5 py-1 font-medium text-rose-700">Pendências impeditivas</span>
-        {% else %}
-        <span class="rounded-full bg-emerald-100 px-2.5 py-1 font-medium text-emerald-700">Regular</span>
-        {% endif %}
-        {% if veiculo.possui_financiamento %}
-        <span class="rounded-full bg-amber-100 px-2.5 py-1 font-medium text-amber-700">Alienação fiduciária</span>
-        {% endif %}
-        {% if veiculo.valor_total_debitos %}
-        <span class="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">Débitos {{ veiculo.valor_total_debitos | moeda }}</span>
-        {% endif %}
+      <div class="mt-4 flex flex-wrap gap-2">
+        {% if veiculo.possui_pendencias_impeditivas %}{{ ui.selo("Pendências", "vermelho") }}{% else %}{{ ui.selo("Regular", "verde") }}{% endif %}
+        {% if veiculo.possui_financiamento %}{{ ui.selo("Alienação fiduciária", "amarelo") }}{% endif %}
+        {% if veiculo.valor_total_debitos %}{{ ui.selo("Débitos " ~ (veiculo.valor_total_debitos | moeda), "cinza") }}{% endif %}
       </div>
-      <span class="mt-4 flex items-center gap-1 text-sm font-medium text-blue-700">Ver serviços {{ icone("avancar", "size-4 transition group-hover:translate-x-0.5") }}</span>
+      <span class="mt-5 flex items-center gap-1 text-sm font-bold text-blue-700">Ver serviços {{ icone("avancar", "size-4 transition group-hover:translate-x-1") }}</span>
     </a>
+    {% else %}
+    <div class="sm:col-span-2 xl:col-span-3">{{ ui.vazio("veiculo", "Nenhum veículo seu registrado nesta UF.") }}</div>
     {% endfor %}
   </div>
 </section>
 
-<section class="mt-8 grid gap-4 sm:grid-cols-3">
-  <a href="/infracoes" class="flex items-center gap-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 hover:shadow-md">
-    <span class="grid size-12 place-items-center rounded-xl bg-rose-50 text-rose-600">{{ icone("alerta", "size-6") }}</span>
-    <div><p class="font-semibold">Infrações</p><p class="text-sm text-slate-500">{{ resumo_infracoes.valor_em_aberto | moeda }} em aberto</p></div>
-  </a>
-  <a href="/sne" class="flex items-center gap-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 hover:shadow-md">
-    <span class="grid size-12 place-items-center rounded-xl bg-indigo-50 text-indigo-600">{{ icone("notificacao", "size-6") }}</span>
-    <div><p class="font-semibold">SNE</p><p class="text-sm text-slate-500">Notificações e 40% de desconto</p></div>
-  </a>
-  <a href="/transferencias" class="flex items-center gap-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 hover:shadow-md">
-    <span class="grid size-12 place-items-center rounded-xl bg-emerald-50 text-emerald-600">{{ icone("transferencia", "size-6") }}</span>
-    <div><p class="font-semibold">Transferências</p><p class="text-sm text-slate-500">Histórico concluído</p></div>
-  </a>
+<section class="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+  {{ ui.atalho("/habilitacao", "habilitacao", "Habilitação", "PPD, categoria e avisos", "azul") }}
+  {{ ui.atalho("/infracoes", "alerta", "Infrações", (resumo_infracoes.valor_em_aberto | moeda) ~ " em aberto", "vermelho") }}
+  {{ ui.atalho("/sne", "notificacao", "SNE", "Até 40% de desconto", "amarelo") }}
+  {{ ui.atalho("/transferencias", "transferencia", "Transferências", "Histórico concluído", "verde") }}
 </section>
 {% endblock %}
