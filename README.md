@@ -1,31 +1,46 @@
-# RepositorioTemplate
+# 2026.2 - T02 - G6 - Projeto Aplicativo Móvel - Entrega 04
 
-Repositório que deve ser utilizado como template inicial pelos grupos da matéria de Arquitetura e Desenho de Software.
+Repositório da Entrega 04 do grupo **Dirigindo Meu Carro** na disciplina Arquitetura e Desenho de Software (FGA0208, UnB). Ele contém:
 
-## Introdução
+- **`docs/`**: documentação publicada no GitHub Pages (Docsify), com o Documento de Arquitetura de Software (DAS) do recorte estudado do aplicativo DETRAN-DF Digital;
+- **`aplicativo/`**: o MVP executável em FastAPI, organizado pelas camadas da Representação Arquitetural e pelos padrões de projeto da Entrega 03.
 
-Este repositório traz um template de repo de documentação a ser seguido pelos grupos de arquitetura e desenho de software.
+GitHub Pages: <https://unbarqdsw2026-2-turma02.github.io/2026.2-T02-_G6_ProjetoAplicativoMovel_Entrega04/>
 
-## Tecnologia
+## Executando com Docker
 
-A geração do site estático é realizada utilizando o [docsify](https://docsify.js.org/).
+Com o Docker Desktop aberto, na raiz do repositório:
 
 ```shell
-"Docsify generates your documentation website on the fly. Unlike GitBook, it does not generate static html files. Instead, it smartly loads and parses your Markdown files and displays them as a website. To start using it, all you need to do is create an index.html and deploy it on GitHub Pages."
+docker compose up --build
 ```
 
-### Instalando o docsify
+| Serviço | Endereço |
+|--|--|
+| Aplicativo (MVP) | <http://127.0.0.1:8000> |
+| API (Swagger) | <http://127.0.0.1:8000/docs> |
+| Documentação (Docsify via Nginx) | <http://127.0.0.1:3000> |
 
-Execute o comando:
+## Executando sem Docker
+
+### Aplicativo
+
+Requisito: Python 3.10 ou superior.
+
+```shell
+pip install -r aplicativo/requirements.txt
+python -m aplicativo
+```
+
+Mais detalhes, dados de teste e rotas da API estão em [`aplicativo/README.md`](aplicativo/README.md).
+
+### Documentação
+
+A documentação é gerada pelo [Docsify](https://docsify.js.org/), que carrega os arquivos Markdown e os exibe como site, sem gerar HTML estático.
 
 ```shell
 npm i docsify-cli -g
-```
-
-### Executando localmente
-
-Para iniciar o site localmente, utilize o comando:
-
-```shell
 docsify serve ./docs
 ```
+
+Sem o Node.js, qualquer servidor estático funciona, por exemplo: `python -m http.server 3000 --directory docs`.

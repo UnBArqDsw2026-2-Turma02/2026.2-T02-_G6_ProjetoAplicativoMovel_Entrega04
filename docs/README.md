@@ -14,18 +14,27 @@
 | 23/2007016  |  [Yuri Souza de Andrade Castro Silva](https://github.com/y123yuri) |
 
 ## Sobre 
-Contextualize, usando referências, links, e outros materiais como fontes.
+Esta entrega consolida as Entregas [01](https://unbarqdsw2026-2-turma02.github.io/2026.2-T02-_G6_ProjetoAplicativoMovel_Entrega01/), [02](https://unbarqdsw2026-2-turma02.github.io/2026.2-T02-_G6_ProjetoAplicativoMovel_Entrega02/) e [03](https://unbarqdsw2026-2-turma02.github.io/2026.2-T02-_G6_ProjetoAplicativoMovel_Entrega03/#/) no [Documento de Arquitetura de Software](/Base/Relatorios/1.1.1.DAS.md) do recorte estudado do aplicativo DETRAN-DF Digital e entrega um [aplicativo executável (MVP)](/Base/Relatorios/1.1.3.AplicativoMVP.md) que materializa a arquitetura proposta, com os padrões Multiton, Factory Method, Prototype, Adapter, Facade e Strategy.
 
 ## Screenshots da Terceira Entrega
 Adicione 2 ou mais screenshots em termos de artefatos realizados na entrega.
 
 ## Há algo a ser executado?
 
-( ) SIM
+(X) SIM
 
-(X) NÃO
+( ) NÃO
 
-Se SIM, insira um manual (ou um script) para auxiliar ainda mais os interessados na execução.
+O MVP fica na pasta `aplicativo/`. Com o Docker Desktop aberto, na raiz do repositório:
+
+```bash
+docker compose up --build
+```
+
+- Aplicativo: <http://127.0.0.1:8000> (API em <http://127.0.0.1:8000/docs>)
+- Esta documentação: <http://127.0.0.1:3000>
+
+Sem Docker, com Python 3.10 ou superior: `pip install -r aplicativo/requirements.txt` e `python -m aplicativo`. O manual completo está na página [1.1.3. Aplicativo (MVP)](/Base/Relatorios/1.1.3.AplicativoMVP.md).
 
 ## Informações Complementares 
 Quaisquer outras informações adicionais podem ser descritas nessa seção.
@@ -35,4 +44,5 @@ Quaisquer outras informações adicionais podem ser descritas nessa seção.
 | Versão |    Data    | Alterações                           | Autor |
 | :----: | :--------: | ------------------------------------ | ----- |
 |  1.0 | 04/11/2026 | Criação do esqueleto inicial a partir do template da disciplina| [Edson](https://github.com/edso-n)|
+|  1.1 | 22/11/2026 | Seção Sobre e manual de execução do MVP | [Yuri](https://github.com/y123yuri)|
 
