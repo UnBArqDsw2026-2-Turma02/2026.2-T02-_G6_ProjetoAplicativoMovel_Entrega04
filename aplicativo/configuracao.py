@@ -12,6 +12,7 @@ PRIMEIRO_EXERCICIO_EMITIVEL = 2000
 
 ENDERECO_SERVIDOR = os.getenv("ENDERECO_SERVIDOR", "127.0.0.1")
 PORTA_PADRAO = int(os.getenv("PORTA_SERVIDOR", "8000"))
+ABRIR_NAVEGADOR = os.getenv("ABRIR_NAVEGADOR", "1") == "1"
 
 
 def obter_exercicio_atual() -> int:

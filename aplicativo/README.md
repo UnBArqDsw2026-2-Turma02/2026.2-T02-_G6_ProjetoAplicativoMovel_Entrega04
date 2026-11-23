@@ -10,7 +10,18 @@ A relação do código com o DAS (camadas, casos de uso e padrões) está na pá
 
 As telas carregam Tailwind CSS e Alpine.js por CDN, então o navegador precisa estar conectado à internet.
 
-### Opção 1: Docker (recomendado)
+### Opção 1: um clique (recomendado)
+
+Requisito: [Python 3.10 ou superior](https://www.python.org/downloads/).
+
+| Sistema | O que fazer |
+|--|--|
+| Windows | Dois cliques em `executar.bat`, na raiz do repositório |
+| Linux ou macOS | `./executar.sh` no terminal, na raiz do repositório |
+
+O script cria o ambiente virtual `.venv`, instala as dependências e abre o navegador em <http://127.0.0.1:8000>. Para usar outra porta: `executar.bat 8001` ou `./executar.sh 8001`.
+
+### Opção 2: Docker
 
 Requisito: [Docker Desktop](https://www.docker.com/products/docker-desktop/) aberto.
 
@@ -25,7 +36,7 @@ docker compose up --build
 
 Para encerrar: `Ctrl+C` e depois `docker compose down`. Para subir apenas o app: `docker compose up --build aplicativo`.
 
-### Opção 2: Python local
+### Opção 3: Python manual
 
 Requisito: Python 3.10 ou superior. Execute a partir da **raiz do repositório**:
 
@@ -42,6 +53,7 @@ Depois, abra <http://127.0.0.1:8000>. Para usar outra porta: `python -m aplicati
 |--|--|--|
 | `ENDERECO_SERVIDOR` | `127.0.0.1` (no Docker: `0.0.0.0`) | Interface em que o servidor escuta |
 | `PORTA_SERVIDOR` | `8000` | Porta do servidor |
+| `ABRIR_NAVEGADOR` | `1` (no Docker: `0`) | Abre o navegador automaticamente ao iniciar |
 
 ### Testes e padrões de código
 
