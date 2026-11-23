@@ -2,7 +2,12 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from aplicativo.apresentacao.dependencias import CidadaoAtual, ConteinerDependencia, responder_operacao
-from aplicativo.apresentacao.esquemas import RequisicaoAdesaoSNE, RequisicaoDesconto, RespostaOperacao
+from aplicativo.apresentacao.esquemas import (
+    RequisicaoAdesaoSNE,
+    RequisicaoDesconto,
+    RequisicaoIndicacaoCondutor,
+    RespostaOperacao,
+)
 from aplicativo.padroes.strategy.validacao_documento_sne import DadosDocumentoSNE
 
 roteador_cidadao = APIRouter(prefix="/api/v1/cidadao", tags=["Cidadão"])
@@ -48,6 +53,34 @@ def solicitar_desconto(
 ) -> JSONResponse:
     resultado = conteiner.infracoes_facade.solicitar_desconto(
         cidadao, identificador, requisicao.percentual, requisicao.termo_aceito
+    )
+    return responder_operacao(resultado)
+
+
+@roteador_cidadao.post(
+    "/infracoes/{identificador}/boleto",
+    tags=["Infrações"],
+    summary="Gera o boleto da infração (Adapter da API de boletos)",
+    response_model=RespostaOperacao,
+)
+def solicitar_boleto(identificador: str, cidadao: CidadaoAtual, conteiner: ConteinerDependencia) -> JSONResponse:
+    return responder_operacao(conteiner.infracoes_facade.solicitar_boleto(cidadao, identificador))
+
+
+@roteador_cidadao.post(
+    "/infracoes/{identificador}/indicacao-condutor",
+    tags=["Infrações"],
+    summary="Indica o condutor responsável (Adapter do protocolo legado)",
+    response_model=RespostaOperacao,
+)
+def indicar_condutor(
+    identificador: str,
+    requisicao: RequisicaoIndicacaoCondutor,
+    cidadao: CidadaoAtual,
+    conteiner: ConteinerDependencia,
+) -> JSONResponse:
+    resultado = conteiner.infracoes_facade.indicar_condutor(
+        cidadao, identificador, requisicao.cpf_condutor, requisicao.numero_cnh_condutor
     )
     return responder_operacao(resultado)
 

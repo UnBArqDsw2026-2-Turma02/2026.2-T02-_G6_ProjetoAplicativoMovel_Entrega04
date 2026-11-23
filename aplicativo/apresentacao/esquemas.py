@@ -4,6 +4,8 @@ from pydantic import BaseModel, Field, field_validator
 
 from aplicativo.configuracao import PRIMEIRO_EXERCICIO_EMITIVEL, obter_exercicio_atual
 from aplicativo.dominio.modelos import TipoDocumentoSNE
+from aplicativo.padroes.chain_of_responsibility.alteracao_categoria import CATEGORIAS_EXISTENTES
+from aplicativo.padroes.state.habilitacao import Gravidade
 
 
 def manter_apenas_digitos(valor: object) -> str:
@@ -64,6 +66,40 @@ class RequisicaoAdesaoSNE(BaseModel):
     placa: str = ""
     renavam: str = ""
     numero_seguranca_crv: str = ""
+
+
+class RequisicaoIndicacaoCondutor(BaseModel):
+    cpf_condutor: str = Field(pattern=r"^\d{11}$", description="CPF do condutor indicado")
+    numero_cnh_condutor: str = Field(pattern=r"^\d{11}$", description="Número da CNH do condutor indicado")
+    declaracao_aceita: bool
+
+    @field_validator("cpf_condutor", "numero_cnh_condutor", mode="before")
+    @classmethod
+    def normalizar_documento(cls, valor: object) -> str:
+        return manter_apenas_digitos(valor)
+
+    @field_validator("declaracao_aceita")
+    @classmethod
+    def exigir_declaracao(cls, valor: bool) -> bool:
+        if not valor:
+            raise ValueError("é preciso confirmar a declaração de responsabilidade")
+        return valor
+
+
+class RequisicaoInfracaoHabilitacao(BaseModel):
+    gravidade: Gravidade
+
+
+class RequisicaoAlteracaoCategoria(BaseModel):
+    categoria_desejada: str
+
+    @field_validator("categoria_desejada", mode="before")
+    @classmethod
+    def validar_categoria(cls, valor: object) -> str:
+        categoria = str(valor or "").strip().upper()
+        if categoria not in CATEGORIAS_EXISTENTES:
+            raise ValueError(f"use uma das categorias {', '.join(CATEGORIAS_EXISTENTES)}")
+        return categoria
 
 
 class RespostaOperacao(BaseModel):

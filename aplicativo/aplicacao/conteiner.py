@@ -1,16 +1,21 @@
 from dataclasses import dataclass
 
+from aplicativo.aplicacao.servicos_habilitacao import ServicosHabilitacao
 from aplicativo.aplicacao.servicos_veiculos import ServicosVeiculos
 from aplicativo.dominio.modelos import TipoDocumentoSNE
 from aplicativo.infraestrutura.mocks import (
+    ApiBoletoMock,
     ApiSneMock,
     ProvedorIdentidadeGovMock,
     RepositorioCidadaosMemoria,
     RepositorioSessoesMemoria,
+    ServicoIndicacaoLegadoMock,
     criar_api_orgao_autuador,
     criar_repositorio_cidadaos,
 )
 from aplicativo.padroes.adapter.autenticacao_gov import AutenticacaoGovBrAdapter, GatewayAutenticacao
+from aplicativo.padroes.adapter.boleto import BoletoApiAdapter
+from aplicativo.padroes.adapter.indicacao_condutor import AdaptadorProtocoloLegado
 from aplicativo.padroes.adapter.orgao_autuador import OrgaoAutuadorAdapter
 from aplicativo.padroes.facade.infracoes_facade import InfracoesFacade
 from aplicativo.padroes.facade.sne_facade import SneFacade
@@ -31,6 +36,7 @@ class ConteinerAplicacao:
     servicos_veiculos: ServicosVeiculos
     infracoes_facade: InfracoesFacade
     sne_facade: SneFacade
+    servicos_habilitacao: ServicosHabilitacao
 
 
 def criar_conteiner() -> ConteinerAplicacao:
@@ -49,6 +55,11 @@ def criar_conteiner() -> ConteinerAplicacao:
         repositorio_sessoes=RepositorioSessoesMemoria(),
         gateway_autenticacao=AutenticacaoGovBrAdapter(ProvedorIdentidadeGovMock(), repositorio_cidadaos),
         servicos_veiculos=ServicosVeiculos(repositorio_cidadaos),
-        infracoes_facade=InfracoesFacade(OrgaoAutuadorAdapter(criar_api_orgao_autuador())),
+        infracoes_facade=InfracoesFacade(
+            OrgaoAutuadorAdapter(criar_api_orgao_autuador()),
+            BoletoApiAdapter(ApiBoletoMock()),
+            AdaptadorProtocoloLegado(ServicoIndicacaoLegadoMock()),
+        ),
         sne_facade=SneFacade(ApiSneMock(), contexto_validacao_sne),
+        servicos_habilitacao=ServicosHabilitacao(),
     )
