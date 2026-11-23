@@ -1,0 +1,19 @@
+services:
+  aplicativo:
+    build:
+      context: .
+      dockerfile: aplicativo/Dockerfile
+    image: dirigindo-meu-carro:entrega04
+    container_name: dirigindo-meu-carro
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  documentacao:
+    image: nginx:1.27-alpine
+    container_name: dirigindo-meu-carro-docs
+    volumes:
+      - ./docs:/usr/share/nginx/html:ro
+    ports:
+      - "3000:80"
+    restart: unless-stopped

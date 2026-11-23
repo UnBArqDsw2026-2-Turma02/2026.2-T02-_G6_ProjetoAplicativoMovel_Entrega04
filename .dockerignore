@@ -1,0 +1,10 @@
+.git
+.github
+docs
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.ruff_cache
+aplicativo/testes
+*.md
+!aplicativo/README.md
