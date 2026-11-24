@@ -21,7 +21,6 @@
           - [Foco 01: Participantes e Metodologia](/Base/Relatorios/1.1.1.DAS.md?id=participantes-no-foco_01)
           - [Foco 02: IA Generativa](/Base/Relatorios/1.1.1.DAS.md?id=foco_02-ia-generativa)
           - [Versionamentos](/Base/Relatorios/1.1.1.DAS.md?id=versionamentos)
-      - [1.1.2. Reutilização](/Base/Relatorios/1.1.2.Reutilizacao.md)
-      - [1.1.3. Aplicativo (MVP)](/Base/Relatorios/1.1.3.AplicativoMVP.md)
+      - [1.1.2. Aplicativo (MVP)](/Base/Relatorios/1.1.2.AplicativoMVP.md)
   - [1.2. Participações](/Base/1.2.Participacoes.md)
   - [1.3. Iniciativas Extras](/Base/1.3.IniciativasExtras.md)

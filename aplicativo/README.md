@@ -4,7 +4,7 @@ Evolução do [MVP da Entrega 03](https://unbarqdsw2026-2-turma02.github.io/2026
 
 Todos os dados são simulados. O login gov.br é um mock: o botão autentica um cidadão de demonstração e abre a tela inicial, sem solicitar nenhum dado.
 
-A relação do código com o DAS (camadas, casos de uso e padrões) está na página [1.1.3. Aplicativo (MVP)](../docs/Base/Relatorios/1.1.3.AplicativoMVP.md) do GitPages.
+A relação do código com o DAS (camadas, casos de uso e padrões) está na página [1.1.2. Aplicativo (MVP)](../docs/Base/Relatorios/1.1.2.AplicativoMVP.md) do GitPages.
 
 ## Como executar
 

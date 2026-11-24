@@ -1,4 +1,5 @@
 from dataclasses import asdict
+from threading import Lock
 
 from aplicativo.dominio.excecoes import AcessoNegado
 from aplicativo.dominio.modelos import Cidadao, Endereco, ResultadoOperacao, SituacaoTransferencia, Veiculo
@@ -34,6 +35,7 @@ def descrever_veiculo(veiculo: Veiculo) -> dict:
 class ServicosVeiculos:
     def __init__(self, repositorio_cidadaos: RepositorioCidadaosMemoria) -> None:
         self._repositorio_cidadaos = repositorio_cidadaos
+        self._trava_alteracoes = Lock()
 
     @staticmethod
     def listar_unidades_federativas() -> list[str]:
@@ -75,7 +77,8 @@ class ServicosVeiculos:
         self, unidade_federativa: str, placa: str, cidadao: Cidadao, novo_endereco: Endereco
     ) -> ResultadoOperacao:
         self.obter_veiculo_do_cidadao(unidade_federativa, placa, cidadao)
-        return AlteracaoEnderecoCreator(unidade_federativa).processar(placa, {"novo_endereco": novo_endereco})
+        with self._trava_alteracoes:
+            return AlteracaoEnderecoCreator(unidade_federativa).processar(placa, {"novo_endereco": novo_endereco})
 
     def emitir_crlve(self, unidade_federativa: str, placa: str, cidadao: Cidadao, exercicio: int) -> ResultadoOperacao:
         self.obter_veiculo_do_cidadao(unidade_federativa, placa, cidadao)

@@ -1,5 +1,6 @@
 import secrets
 from copy import deepcopy
+from threading import Lock
 from uuid import uuid4
 
 from aplicativo.dominio.dados_demonstracao import (
@@ -35,18 +36,24 @@ class RepositorioCidadaosMemoria:
 class RepositorioSessoesMemoria:
     def __init__(self) -> None:
         self._cpf_por_token: dict[str, str] = {}
+        self._trava = Lock()
 
     def criar_sessao(self, cpf: str) -> str:
-        self._cpf_por_token = {token: cpf_salvo for token, cpf_salvo in self._cpf_por_token.items() if cpf_salvo != cpf}
         token_sessao = secrets.token_urlsafe(32)
-        self._cpf_por_token[token_sessao] = cpf
+        with self._trava:
+            tokens_antigos = [token for token, cpf_salvo in self._cpf_por_token.items() if cpf_salvo == cpf]
+            for token_antigo in tokens_antigos:
+                del self._cpf_por_token[token_antigo]
+            self._cpf_por_token[token_sessao] = cpf
         return token_sessao
 
     def buscar_cpf(self, token_sessao: str) -> str | None:
-        return self._cpf_por_token.get(token_sessao)
+        with self._trava:
+            return self._cpf_por_token.get(token_sessao)
 
     def encerrar_sessao(self, token_sessao: str) -> None:
-        self._cpf_por_token.pop(token_sessao, None)
+        with self._trava:
+            self._cpf_por_token.pop(token_sessao, None)
 
 
 class ProvedorIdentidadeGovMock:
