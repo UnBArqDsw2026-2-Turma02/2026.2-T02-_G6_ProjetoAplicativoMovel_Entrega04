@@ -1,0 +1,218 @@
+@startuml
+title Diagrama de Componentes e Dependências do MVP
+
+top to bottom direction
+
+skinparam componentStyle uml2
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam linetype polyline
+skinparam nodesep 40
+skinparam ranksep 55
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam ArrowColor #333333
+skinparam package {
+    BackgroundColor #FAFAFA
+    BorderColor #555555
+}
+skinparam component {
+    BackgroundColor #FFFFFF
+    BorderColor #333333
+}
+skinparam interface {
+    BackgroundColor #FFFFFF
+    BorderColor #333333
+}
+
+' =====================================================
+' APRESENTAÇÃO
+' =====================================================
+
+package "Apresentação e Interação\naplicativo/apresentacao/" as APRESENTACAO {
+    component "principal.py\n<<FastAPI>>" as Principal
+    component "Rotas de Páginas\nrotas_paginas.py" as RotasPaginas
+    component "API REST /api/v1\nrotas_api_*.py" as ApiRest
+    component "Validação e Sessão\nesquemas.py\ndependencias.py" as Dependencias
+    component "Interface Web\nJinja2 + Alpine.js\napp.js" as InterfaceWeb
+}
+
+' =====================================================
+' APLICAÇÃO
+' =====================================================
+
+package "Aplicação e Serviços\naplicativo/aplicacao/" as APLICACAO {
+    component "ConteinerAplicacao\nconteiner.py" as Container
+    component "ServicosVeiculos\nservicos_veiculos.py" as ServicosVeiculos
+    component "ServicosHabilitacao\nservicos_habilitacao.py" as ServicosHabilitacao
+}
+
+' =====================================================
+' DOMÍNIO E PADRÕES
+' =====================================================
+
+package "Domínio e Padrões de Projeto\naplicativo/dominio/ e aplicativo/padroes/" as DOMINIO {
+
+    package "Autenticação" as FLUXO_AUTH {
+        component "AutenticacaoGovBrAdapter\n<<Adapter>>" as AuthAdapter
+        interface "GatewayAutenticacao" as GatewayAuth
+    }
+
+    package "Fluxo de Veículos" as FLUXO_VEICULOS {
+        component "Consultas e Serviços\n<<Factory Method>>" as Factory
+        component "BaseDetranMultiton\n<<Multiton>>" as Multiton
+        component "EmissorCRLVe\n<<Prototype>>" as Prototype
+    }
+
+    package "Fluxo de Infrações e SNE" as FLUXO_INFRACOES {
+        component "InfracoesFacade\n<<Facade>>" as InfracoesFacade
+        component "SneFacade\n<<Facade>>" as SneFacade
+        component "Políticas de Desconto\n<<Strategy>>" as PoliticasDesconto
+        component "Validação de Documento SNE\n<<Strategy>>" as ValidacaoSne
+        interface "GatewayInfracoes" as GatewayInfracoes
+        interface "GatewayBoleto" as GatewayBoleto
+        interface "PortaProtocolo" as PortaProtocolo
+        component "OrgaoAutuadorAdapter\n<<Adapter>>" as OrgaoAdapter
+        component "BoletoApiAdapter\n<<Adapter>>" as BoletoAdapter
+        component "AdaptadorProtocoloLegado\n<<Adapter>>" as IndicacaoAdapter
+    }
+
+    package "Fluxo de Habilitação" as FLUXO_HABILITACAO {
+        component "Estados da PPD\n<<State>>" as State
+        component "Acompanhamento\nPush / E-mail / Auditoria\n<<Observer>>" as Observer
+        component "Validação de Mudança\nde Categoria\n<<Chain of Responsibility>>" as Chain
+    }
+
+    component "Modelo de Domínio\n+ Exceções" as ModeloDominio
+}
+
+' =====================================================
+' INFRAESTRUTURA
+' =====================================================
+
+package "Infraestrutura e Integrações\naplicativo/infraestrutura/" as INFRA {
+    component "RepositorioSessoesMemoria" as RepoSessoes
+    component "RepositorioCidadaosMemoria" as RepoCidadaos
+    component "ProvedorIdentidadeGovMock\n<<mock>>" as GovMock
+    component "ApiOrgaoAutuadorMock\n<<mock>>" as OrgaoMock
+    component "ApiBoletoMock\n<<mock>>" as BoletoMock
+    component "ServicoIndicacaoLegadoMock\n<<mock>>" as IndicacaoMock
+    component "ApiSneMock\n<<mock>>" as SneMock
+}
+
+' =====================================================
+' SISTEMAS EXTERNOS
+' =====================================================
+
+package "Sistemas externos reais\n<<não integrados no MVP>>" as EXTERNOS #F3F3F3 {
+    component "Gov.br" as GovBR
+    component "Órgãos Autuadores /\nSENATRAN" as OrgaosExternos
+    component "Serviço de Boletos" as BoletoExterno
+    component "Serviço Legado de\nIndicação de Condutor" as IndicacaoExterna
+    component "SNE" as SneExterno
+}
+
+' =====================================================
+' APRESENTAÇÃO
+' =====================================================
+
+Principal --> RotasPaginas : registra
+Principal --> ApiRest : registra
+RotasPaginas --> InterfaceWeb : renderiza
+RotasPaginas --> Dependencias
+ApiRest --> Dependencias : valida entrada /\nsessão
+Dependencias --> Container : <<Depends>>
+Dependencias --> RepoSessoes : consulta sessão
+
+' As rotas chamam os serviços e as Facades que o contêiner expõe
+RotasPaginas --> GatewayAuth : login gov.br
+ApiRest --> ServicosVeiculos
+ApiRest --> ServicosHabilitacao
+ApiRest --> InfracoesFacade
+ApiRest --> SneFacade
+
+' =====================================================
+' COMPOSIÇÃO (uma seta por fluxo, para não poluir)
+' =====================================================
+
+Container ..> ServicosVeiculos : cria
+Container ..> ServicosHabilitacao : cria
+Container ..> FLUXO_INFRACOES : monta Facades,\nAdapters e Strategies
+Container ..> FLUXO_AUTH : monta
+
+' =====================================================
+' AUTENTICAÇÃO
+' =====================================================
+
+AuthAdapter -up- GatewayAuth
+AuthAdapter --> GovMock : converte token
+AuthAdapter --> RepoCidadaos
+
+' =====================================================
+' VEÍCULOS
+' =====================================================
+
+ServicosVeiculos --> Factory : cria consulta /\nserviço
+ServicosVeiculos --> RepoCidadaos : posse do veículo
+Factory --> Multiton : base por UF
+Factory --> Prototype : clona CRLV-e
+Multiton --> ModeloDominio
+Prototype --> ModeloDominio
+
+' =====================================================
+' INFRAÇÕES E SNE
+' =====================================================
+
+InfracoesFacade --> GatewayInfracoes
+InfracoesFacade --> GatewayBoleto
+InfracoesFacade --> PortaProtocolo
+InfracoesFacade --> PoliticasDesconto : 20% / 40%
+
+OrgaoAdapter -up- GatewayInfracoes
+BoletoAdapter -up- GatewayBoleto
+IndicacaoAdapter -up- PortaProtocolo
+
+OrgaoAdapter --> OrgaoMock
+BoletoAdapter --> BoletoMock
+IndicacaoAdapter --> IndicacaoMock
+
+SneFacade --> ValidacaoSne : CNH / CRLV
+SneFacade --> SneMock : acesso direto\n(simplificação do MVP)
+
+InfracoesFacade --> ModeloDominio
+
+' =====================================================
+' HABILITAÇÃO
+' =====================================================
+
+ServicosHabilitacao --> State : controla situação
+ServicosHabilitacao --> Chain : valida categoria
+State --> Observer : notifica mudança
+ServicosHabilitacao ..> Observer : registra observadores
+State --> ModeloDominio
+
+' =====================================================
+' MOCKS x SISTEMAS EXTERNOS (não há chamada real)
+' =====================================================
+
+GovMock ..> GovBR : simula
+OrgaoMock ..> OrgaosExternos : simula
+BoletoMock ..> BoletoExterno : simula
+IndicacaoMock ..> IndicacaoExterna : simula
+SneMock ..> SneExterno : simula
+
+note right of Container
+  Ponto de composição: cria os serviços,
+  as Facades, os Adapters, as Strategies
+  e os repositórios na inicialização.
+end note
+
+legend bottom
+  |= Elemento |= Significado |
+  | Linha contínua | Dependência ou chamada entre componentes |
+  | Linha tracejada | Criação pelo contêiner ou simulação de sistema externo |
+  | Interface (círculo) | Contrato que desacopla o domínio da infraestrutura |
+  | <<mock>> | Implementação simulada usada pelo MVP |
+endlegend
+
+@enduml
